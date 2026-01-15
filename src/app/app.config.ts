@@ -7,7 +7,8 @@ import { IonicRouteStrategy, provideIonicAngular } from '@ionic/angular/standalo
 import { initializeApp, provideFirebaseApp } from '@angular/fire/app';
 import { getFirestore, provideFirestore } from '@angular/fire/firestore';
 import { getAuth, provideAuth } from '@angular/fire/auth';
-import { getStorage, provideStorage } from '@angular/fire/storage';
+// Storage deshabilitado temporalmente (requiere plan Blaze)
+// import { getStorage, provideStorage } from '@angular/fire/storage';
 
 import { routes } from './app.routes';
 import { environment } from '../environments/environment';
@@ -25,7 +26,8 @@ export const appConfig: ApplicationConfig = {
     provideHttpClient(),
     provideFirebaseApp(() => initializeApp(environment.firebaseConfig)),
     provideFirestore(() => getFirestore()),
-    provideAuth(() => getAuth()),
-    provideStorage(() => getStorage())
+    provideAuth(() => getAuth())
+    // Storage deshabilitado temporalmente
+    // provideStorage(() => getStorage())
   ]
 };

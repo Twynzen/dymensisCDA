@@ -18,13 +18,14 @@ import {
   CollectionReference,
   QueryConstraint
 } from '@angular/fire/firestore';
-import {
-  Storage,
-  ref,
-  uploadString,
-  getDownloadURL,
-  deleteObject
-} from '@angular/fire/storage';
+// Storage deshabilitado temporalmente (requiere plan Blaze)
+// import {
+//   Storage,
+//   ref,
+//   uploadString,
+//   getDownloadURL,
+//   deleteObject
+// } from '@angular/fire/storage';
 import { Observable, from, map } from 'rxjs';
 import {
   Universe,
@@ -36,7 +37,8 @@ import {
 @Injectable({ providedIn: 'root' })
 export class FirebaseService {
   private firestore = inject(Firestore);
-  private storage = inject(Storage);
+  // Storage deshabilitado temporalmente
+  // private storage = inject(Storage);
 
   // ==================== UNIVERSES ====================
 
@@ -209,30 +211,22 @@ export class FirebaseService {
     return docRef.id;
   }
 
-  // ==================== STORAGE ====================
+  // ==================== STORAGE (DESHABILITADO) ====================
+  // Storage requiere plan Blaze. Estas funciones están deshabilitadas temporalmente.
 
   async uploadAvatar(userId: string, characterId: string, imageBase64: string): Promise<string> {
-    const storagePath = `avatars/${userId}/${characterId}.png`;
-    const storageRef = ref(this.storage, storagePath);
-    await uploadString(storageRef, imageBase64, 'data_url');
-    return await getDownloadURL(storageRef);
+    console.warn('Storage deshabilitado: uploadAvatar no disponible');
+    throw new Error('Storage no disponible. Requiere plan Blaze de Firebase.');
   }
 
   async deleteAvatar(userId: string, characterId: string): Promise<void> {
-    const storagePath = `avatars/${userId}/${characterId}.png`;
-    const storageRef = ref(this.storage, storagePath);
-    try {
-      await deleteObject(storageRef);
-    } catch {
-      // Ignore if avatar doesn't exist
-    }
+    // No hacer nada - Storage deshabilitado
+    console.warn('Storage deshabilitado: deleteAvatar no disponible');
   }
 
   async uploadSharedCard(shareId: string, imageBase64: string): Promise<string> {
-    const storagePath = `shared/${shareId}.png`;
-    const storageRef = ref(this.storage, storagePath);
-    await uploadString(storageRef, imageBase64, 'data_url');
-    return await getDownloadURL(storageRef);
+    console.warn('Storage deshabilitado: uploadSharedCard no disponible');
+    throw new Error('Storage no disponible. Usa compartir directo en vez de crear link.');
   }
 
   // ==================== SHARE TOKENS ====================

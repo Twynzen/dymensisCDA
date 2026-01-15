@@ -56,7 +56,8 @@ Acción: "Estudié grimorios antiguos toda la noche."
 `;
 
   async checkWebGPUSupport(): Promise<WebGPUStatus> {
-    if (!navigator.gpu) {
+    const nav = navigator as any;
+    if (!nav.gpu) {
       return {
         supported: false,
         reason: 'WebGPU no disponible en este navegador. Usa Chrome, Edge o Firefox actualizado.'
@@ -64,7 +65,7 @@ Acción: "Estudié grimorios antiguos toda la noche."
     }
 
     try {
-      const adapter = await navigator.gpu.requestAdapter();
+      const adapter = await nav.gpu.requestAdapter();
       if (!adapter) {
         return {
           supported: false,

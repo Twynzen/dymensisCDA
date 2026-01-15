@@ -18,9 +18,9 @@ import { IonicModule } from '@ionic/angular';
           <ion-label>Universos</ion-label>
         </ion-tab-button>
 
-        <ion-tab-button tab="ai">
-          <ion-icon name="sparkles"></ion-icon>
-          <ion-label>IA</ion-label>
+        <ion-tab-button tab="creation">
+          <ion-icon name="create-outline"></ion-icon>
+          <ion-label>Creación</ion-label>
         </ion-tab-button>
       </ion-tab-bar>
     </ion-tabs>

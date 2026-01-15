@@ -1,10 +1,11 @@
 import { Component, Input, computed, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { IonicModule } from '@ionic/angular';
 
 @Component({
   selector: 'app-stat-bar',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, IonicModule],
   template: `
     <div class="stat-bar-container">
       <div class="stat-header">

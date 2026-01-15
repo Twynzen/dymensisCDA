@@ -1,5 +1,6 @@
 import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { IonicModule, ModalController, ToastController } from '@ionic/angular';
 import { CharacterStore } from '../data-access/character.store';
@@ -11,7 +12,7 @@ import { fadeInAnimation, statChangeAnimation } from '../../../shared/animations
 @Component({
   selector: 'app-character-detail',
   standalone: true,
-  imports: [CommonModule, IonicModule, StatBarComponent, StatsRadarComponent],
+  imports: [CommonModule, FormsModule, IonicModule, StatBarComponent, StatsRadarComponent],
   animations: [fadeInAnimation, statChangeAnimation],
   template: `
     <ion-header>

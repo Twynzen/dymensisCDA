@@ -65,6 +65,7 @@ import { PrintableCardComponent } from '../../../shared/ui/printable-card/printa
               </ion-label>
             </ion-item>
 
+            <!-- Enlace temporal deshabilitado (requiere Firebase Storage / plan Blaze)
             <ion-item button (click)="createLink()">
               <ion-icon name="link" slot="start" color="tertiary"></ion-icon>
               <ion-label>
@@ -72,27 +73,8 @@ import { PrintableCardComponent } from '../../../shared/ui/printable-card/printa
                 <p>Genera un link que expira en 1 hora</p>
               </ion-label>
             </ion-item>
+            -->
           </ion-list>
-
-          @if (generatedLink()) {
-            <div class="link-section">
-              <ion-item>
-                <ion-input
-                  [value]="generatedLink()"
-                  readonly
-                  label="Enlace generado"
-                  labelPlacement="floating"
-                ></ion-input>
-                <ion-button slot="end" fill="clear" (click)="copyLink()">
-                  <ion-icon slot="icon-only" name="copy"></ion-icon>
-                </ion-button>
-              </ion-item>
-              <p class="link-hint">
-                <ion-icon name="time-outline"></ion-icon>
-                Este enlace expira en 1 hora
-              </p>
-            </div>
-          }
         </div>
 
         <div class="info-section">

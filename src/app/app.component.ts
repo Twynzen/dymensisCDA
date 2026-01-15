@@ -10,6 +10,7 @@ import {
   planetOutline,
   sparkles,
   create,
+  createOutline,
   trash,
   share,
   shareOutline,
@@ -58,7 +59,21 @@ import {
   personAddOutline,
   ellipse,
   settings,
-  settingsOutline
+  settingsOutline,
+  chatbubbles,
+  chatbubblesOutline,
+  send,
+  sendOutline,
+  refresh,
+  refreshOutline,
+  build,
+  buildOutline,
+  colorWand,
+  colorWandOutline,
+  image,
+  imageOutline,
+  book,
+  bookOutline
 } from 'ionicons/icons';
 
 @Component({
@@ -130,7 +145,22 @@ export class AppComponent {
       'person-add-outline': personAddOutline,
       ellipse,
       settings,
-      'settings-outline': settingsOutline
+      'settings-outline': settingsOutline,
+      'create-outline': createOutline,
+      chatbubbles,
+      'chatbubbles-outline': chatbubblesOutline,
+      send,
+      'send-outline': sendOutline,
+      refresh,
+      'refresh-outline': refreshOutline,
+      build,
+      'build-outline': buildOutline,
+      'color-wand': colorWand,
+      'color-wand-outline': colorWandOutline,
+      image,
+      'image-outline': imageOutline,
+      book,
+      'book-outline': bookOutline
     });
   }
 }
