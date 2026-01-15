@@ -1,0 +1,37 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // ========== AVATARS ==========
+    // User character avatars
+    match /avatars/{userId}/{characterId}.png {
+      // Only the owner can read/write their avatars
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if request.auth != null &&
+                      request.auth.uid == userId &&
+                      request.resource.size < 5 * 1024 * 1024 && // Max 5MB
+                      request.resource.contentType.matches('image/.*');
+      allow delete: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // ========== SHARED CARDS ==========
+    // Temporary shared character card images
+    match /shared/{shareId}.png {
+      // Anyone can read shared cards (public links)
+      allow read: if true;
+
+      // Only authenticated users can create shared cards
+      allow write: if request.auth != null &&
+                      request.resource.size < 2 * 1024 * 1024 && // Max 2MB
+                      request.resource.contentType.matches('image/png');
+
+      // Allow deletion by anyone (cleanup scheduled function will handle this)
+      allow delete: if request.auth != null;
+    }
+
+    // ========== DEFAULT DENY ==========
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

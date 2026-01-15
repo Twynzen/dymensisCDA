@@ -1,0 +1,120 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ========== HELPER FUNCTIONS ==========
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function fieldUnchanged(field) {
+      return request.resource.data[field] == resource.data[field];
+    }
+
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+
+    // ========== UNIVERSES ==========
+    // Sistemas de reglas que pueden ser públicos o privados
+
+    match /universes/{universeId} {
+      // Allow read if public OR if user is the creator
+      allow read: if isSignedIn() &&
+                    (resource.data.isPublic == true ||
+                     resource.data.createdBy == request.auth.uid);
+
+      // Allow create if user sets themselves as creator
+      allow create: if isSignedIn() &&
+                      request.resource.data.createdBy == request.auth.uid &&
+                      hasRequiredFields(['name', 'statDefinitions', 'progressionRules']);
+
+      // Allow update only by creator, createdBy cannot change
+      allow update: if isSignedIn() &&
+                      resource.data.createdBy == request.auth.uid &&
+                      fieldUnchanged('createdBy');
+
+      // Allow delete only by creator
+      allow delete: if isSignedIn() &&
+                      resource.data.createdBy == request.auth.uid;
+
+      // Universe skills (templates available in this universe)
+      match /skills/{skillId} {
+        allow read: if isSignedIn();
+        allow write: if isSignedIn() &&
+                       get(/databases/$(database)/documents/universes/$(universeId)).data.createdBy == request.auth.uid;
+      }
+    }
+
+    // ========== USERS ==========
+    // User profile data
+
+    match /users/{userId} {
+      allow read, write: if isOwner(userId);
+
+      // ========== CHARACTERS ==========
+      // Completely private unless explicitly shared
+
+      match /characters/{characterId} {
+        // Allow read by owner OR if shared and not expired
+        allow read: if isOwner(userId) ||
+                      (resource.data.sharing.isShared == true &&
+                       resource.data.sharing.shareExpiration > request.time);
+
+        // Allow create by owner with required fields
+        allow create: if isOwner(userId) &&
+                        request.resource.data.ownerId == request.auth.uid &&
+                        hasRequiredFields(['name', 'universeId', 'stats']);
+
+        // Allow update by owner, cannot change ownership or creation date
+        allow update: if isOwner(userId) &&
+                        fieldUnchanged('ownerId') &&
+                        fieldUnchanged('createdAt');
+
+        // Allow delete by owner
+        allow delete: if isOwner(userId);
+
+        // ========== CHARACTER SKILLS ==========
+        match /skills/{skillId} {
+          // Allow read if owner OR if character is shared
+          allow read: if isOwner(userId) ||
+                        get(/databases/$(database)/documents/users/$(userId)/characters/$(characterId)).data.sharing.isShared == true;
+          allow write: if isOwner(userId);
+        }
+
+        // ========== CHARACTER HISTORY ==========
+        // Immutable log of actions and stat changes
+        match /history/{entryId} {
+          allow read: if isOwner(userId);
+          allow create: if isOwner(userId);
+          // History entries cannot be updated or deleted (immutable)
+          allow update, delete: if false;
+        }
+      }
+    }
+
+    // ========== SHARE TOKENS ==========
+    // Temporary links for sharing character cards
+
+    match /shareTokens/{tokenId} {
+      // Anyone signed in can read (needed to verify links)
+      allow read: if isSignedIn();
+
+      // Only creator can create tokens
+      allow create: if isSignedIn() &&
+                      request.resource.data.createdBy == request.auth.uid;
+
+      // Only creator can delete
+      allow delete: if isSignedIn() &&
+                      resource.data.createdBy == request.auth.uid;
+
+      // No updates allowed
+      allow update: if false;
+    }
+  }
+}
