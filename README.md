@@ -1,0 +1,2 @@
+# dymensisCDA
+Characters details agnostic 
