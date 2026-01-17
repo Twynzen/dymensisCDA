@@ -20,7 +20,7 @@ import { Character, StatDefinition } from '../../../core/models';
             <img [src]="avatarUrl()" class="avatar" alt="Avatar">
           } @else {
             <div class="avatar-placeholder">
-              <ion-icon name="person"></ion-icon>
+              <ion-icon name="person-outline"></ion-icon>
             </div>
           }
           <div class="awakening-badge" [class]="'rank-' + awakening()">

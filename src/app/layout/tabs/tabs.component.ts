@@ -1,5 +1,7 @@
-import { Component } from '@angular/core';
-import { IonicModule } from '@ionic/angular';
+import { Component, inject } from '@angular/core';
+import { Router } from '@angular/router';
+import { IonicModule, AlertController } from '@ionic/angular';
+import { AuthService } from '../../core/services/auth.service';
 
 @Component({
   selector: 'app-tabs',
@@ -14,13 +16,18 @@ import { IonicModule } from '@ionic/angular';
         </ion-tab-button>
 
         <ion-tab-button tab="universes">
-          <ion-icon name="planet"></ion-icon>
+          <ion-icon name="planet-outline"></ion-icon>
           <ion-label>Universos</ion-label>
         </ion-tab-button>
 
         <ion-tab-button tab="creation">
           <ion-icon name="create-outline"></ion-icon>
           <ion-label>Creación</ion-label>
+        </ion-tab-button>
+
+        <ion-tab-button (click)="showProfileMenu($event)">
+          <ion-icon name="person-circle"></ion-icon>
+          <ion-label>Perfil</ion-label>
         </ion-tab-button>
       </ion-tab-bar>
     </ion-tabs>
@@ -42,4 +49,42 @@ import { IonicModule } from '@ionic/angular';
     }
   `]
 })
-export class TabsComponent {}
+export class TabsComponent {
+  private authService = inject(AuthService);
+  private alertController = inject(AlertController);
+  private router = inject(Router);
+
+  async showProfileMenu(event: Event): Promise<void> {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const user = this.authService.user();
+
+    const alert = await this.alertController.create({
+      header: user?.displayName || 'Mi Perfil',
+      subHeader: user?.email || '',
+      buttons: [
+        {
+          text: 'Ir al Inicio',
+          handler: () => {
+            this.router.navigate(['/home']);
+          }
+        },
+        {
+          text: 'Cerrar Sesión',
+          role: 'destructive',
+          handler: async () => {
+            await this.authService.signOut();
+            this.router.navigate(['/home']);
+          }
+        },
+        {
+          text: 'Cancelar',
+          role: 'cancel'
+        }
+      ]
+    });
+
+    await alert.present();
+  }
+}

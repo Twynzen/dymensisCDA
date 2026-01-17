@@ -11,7 +11,7 @@ import { ChatMessage } from '../data-access/creation.store';
     <div class="message-wrapper" [class.user]="isUser()" [class.assistant]="!isUser()">
       @if (!isUser()) {
         <div class="avatar">
-          <ion-icon name="sparkles"></ion-icon>
+          <ion-icon name="sparkles-outline"></ion-icon>
         </div>
       }
       <div class="message-bubble" [class.user-bubble]="isUser()" [class.assistant-bubble]="!isUser()">
@@ -22,7 +22,7 @@ import { ChatMessage } from '../data-access/creation.store';
       </div>
       @if (isUser()) {
         <div class="avatar user-avatar">
-          <ion-icon name="person"></ion-icon>
+          <ion-icon name="person-outline"></ion-icon>
         </div>
       }
     </div>

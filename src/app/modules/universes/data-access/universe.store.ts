@@ -11,6 +11,7 @@ import { AuthService } from '../../../core/services/auth.service';
 import {
   Universe,
   DEFAULT_STAT_DEFINITIONS,
+  DEFAULT_INITIAL_POINTS,
   DEFAULT_PROGRESSION_RULES,
   DEFAULT_AWAKENING_SYSTEM
 } from '../../../core/models';
@@ -59,14 +60,30 @@ export const UniverseStore = signalStore(
 
     return {
       async loadUniverses(): Promise<void> {
-        const userId = authService.userId();
-
         patchState(store, { loading: true, error: null });
+
         try {
+          // Wait for auth to be ready before checking userId
+          console.log('[UniverseStore] loadUniverses: Waiting for auth to be ready...');
+          await authService.waitForAuthReady();
+
+          const userId = authService.userId();
+          console.log('[UniverseStore] loadUniverses: Auth state -', {
+            isAuthenticated: authService.isAuthenticated(),
+            userId: userId
+          });
+
           const [publicUniverses, userUniverses] = await Promise.all([
             firebaseService.getPublicUniverses(),
             userId ? firebaseService.getUserUniverses(userId) : Promise.resolve([])
           ]);
+
+          console.log('[UniverseStore] loadUniverses: Loaded -', {
+            publicCount: publicUniverses.length,
+            userCount: userUniverses.length,
+            publicNames: publicUniverses.map(u => u.name),
+            userNames: userUniverses.map(u => u.name)
+          });
 
           patchState(store, {
             publicUniverses,
@@ -74,6 +91,7 @@ export const UniverseStore = signalStore(
             loading: false
           });
         } catch (error) {
+          console.error('[UniverseStore] loadUniverses: Error -', error);
           patchState(store, {
             error: 'Error al cargar universos',
             loading: false
@@ -99,27 +117,90 @@ export const UniverseStore = signalStore(
       },
 
       async createUniverse(
-        name: string,
-        description: string,
+        nameOrData: string | Partial<Universe>,
+        description?: string,
         isPublic: boolean = false
       ): Promise<string | null> {
+        // Wait for auth to be ready before checking userId
+        console.log('[UniverseStore] createUniverse: Waiting for auth to be ready...');
+        const isAuth = await authService.waitForAuthReady();
+        console.log('[UniverseStore] createUniverse: Auth ready, isAuthenticated:', isAuth);
+
         const userId = authService.userId();
-        if (!userId) return null;
+        console.log('[UniverseStore] createUniverse: Auth state -', {
+          loading: authService.loading(),
+          isAuthenticated: authService.isAuthenticated(),
+          userId: userId,
+          userEmail: authService.user()?.email
+        });
+
+        if (!userId) {
+          console.error('[UniverseStore] createUniverse: No userId - user not authenticated');
+          patchState(store, { error: 'Debes iniciar sesión para crear universos' });
+          return null;
+        }
 
         patchState(store, { loading: true, error: null });
         try {
-          const universe: Omit<Universe, 'id'> = {
-            name,
-            description,
-            createdBy: userId,
-            createdAt: new Date(),
-            isPublic,
-            statDefinitions: { ...DEFAULT_STAT_DEFINITIONS },
-            progressionRules: [...DEFAULT_PROGRESSION_RULES],
-            awakeningSystem: { ...DEFAULT_AWAKENING_SYSTEM }
+          let universe: Omit<Universe, 'id'>;
+
+          // Helper to estimate document size
+          const estimateDocSize = (obj: object): number => {
+            return new Blob([JSON.stringify(obj)]).size;
           };
 
+          if (typeof nameOrData === 'string') {
+            // Legacy call: createUniverse(name, description, isPublic)
+            universe = {
+              name: nameOrData,
+              description: description || '',
+              createdBy: userId,
+              createdAt: new Date(),
+              isPublic,
+              statDefinitions: { ...DEFAULT_STAT_DEFINITIONS },
+              initialPoints: DEFAULT_INITIAL_POINTS,
+              progressionRules: [...DEFAULT_PROGRESSION_RULES],
+              awakeningSystem: { ...DEFAULT_AWAKENING_SYSTEM }
+            };
+          } else {
+            // New call: createUniverse(Partial<Universe>) with ALL data at once
+            const data = nameOrData;
+            universe = {
+              name: data.name || 'Sin nombre',
+              description: data.description || '',
+              createdBy: userId,
+              createdAt: new Date(),
+              isPublic: data.isPublic ?? false,
+              statDefinitions: data.statDefinitions || { ...DEFAULT_STAT_DEFINITIONS },
+              initialPoints: data.initialPoints ?? DEFAULT_INITIAL_POINTS,
+              progressionRules: data.progressionRules || [...DEFAULT_PROGRESSION_RULES],
+              awakeningSystem: data.awakeningSystem || { ...DEFAULT_AWAKENING_SYSTEM },
+              // Optional fields
+              ...(data.raceSystem && { raceSystem: data.raceSystem }),
+              ...(data.coverImage && { coverImage: data.coverImage })
+            };
+          }
+
+          // Validate document size before saving (Firestore limit is 1MB = 1,048,576 bytes)
+          const FIRESTORE_MAX_SIZE = 1_000_000; // Using 1MB with some margin
+          const docSize = estimateDocSize(universe);
+          console.log(`[UniverseStore] Estimated document size: ${Math.round(docSize / 1024)}KB`);
+
+          if (docSize > FIRESTORE_MAX_SIZE) {
+            const sizeKB = Math.round(docSize / 1024);
+            const maxKB = Math.round(FIRESTORE_MAX_SIZE / 1024);
+            console.error(`[UniverseStore] Document too large: ${sizeKB}KB > ${maxKB}KB limit`);
+            patchState(store, {
+              error: `El universo contiene demasiados datos. Intenta con menos imágenes o razas más simples.`,
+              loading: false
+            });
+            return null;
+          }
+
+          console.log('Creating universe in Firebase:', universe.name);
           const universeId = await firebaseService.createUniverse(universe);
+          console.log('Universe created with ID:', universeId);
+
           const newUniverse = { ...universe, id: universeId };
 
           patchState(store, {
@@ -129,6 +210,7 @@ export const UniverseStore = signalStore(
 
           return universeId;
         } catch (error) {
+          console.error('Error in createUniverse:', error);
           patchState(store, {
             error: 'Error al crear el universo',
             loading: false
@@ -196,8 +278,8 @@ export const UniverseStore = signalStore(
         return Object.entries(universe.statDefinitions)
           .filter(([, def]) => !def.isDerived)
           .reduce(
-            (acc, [key, def]) => {
-              acc[key] = def.defaultValue;
+            (acc, [key]) => {
+              acc[key] = 0; // Stats start at 0, points are distributed by user
               return acc;
             },
             {} as Record<string, number>

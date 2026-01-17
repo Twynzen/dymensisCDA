@@ -110,21 +110,72 @@ export const CharacterStore = signalStore(
       },
 
       async createCharacter(
-        name: string,
-        universeId: string,
-        defaultStats: Record<string, number>
+        nameOrData: string | Partial<Character>,
+        universeId?: string,
+        defaultStats?: Record<string, number>
       ): Promise<string | null> {
+        // Wait for auth to be ready before checking userId
+        console.log('[CharacterStore] createCharacter: Waiting for auth to be ready...');
+        const isAuth = await authService.waitForAuthReady();
+        console.log('[CharacterStore] createCharacter: Auth ready, isAuthenticated:', isAuth);
+
         const userId = authService.userId();
-        if (!userId) return null;
+        console.log('[CharacterStore] createCharacter: Auth state -', {
+          loading: authService.loading(),
+          isAuthenticated: authService.isAuthenticated(),
+          userId: userId,
+          userEmail: authService.user()?.email
+        });
+
+        if (!userId) {
+          console.error('[CharacterStore] createCharacter: No userId - user not authenticated');
+          patchState(store, { error: 'Debes iniciar sesión para crear personajes' });
+          return null;
+        }
 
         patchState(store, { loading: true, error: null });
         try {
-          const character = createDefaultCharacter(
-            name,
-            universeId,
-            userId,
-            defaultStats
-          );
+          let character: Character;
+
+          // Support both old (string, string, stats) and new (Partial<Character>) signatures
+          if (typeof nameOrData === 'string') {
+            // Legacy call: createCharacter(name, universeId, stats)
+            character = createDefaultCharacter(
+              nameOrData,
+              universeId!,
+              userId,
+              defaultStats || {}
+            );
+          } else {
+            // New call: createCharacter(Partial<Character>) with all data
+            const data = nameOrData;
+            character = createDefaultCharacter(
+              data.name || 'Sin nombre',
+              data.universeId || '',
+              userId,
+              data.stats || {},
+              {
+                raceId: data.raceId,
+                baseStats: data.baseStats,
+                bonusStats: data.bonusStats,
+                derivedStats: data.derivedStats,
+                description: data.description,
+                backstory: data.backstory,
+                personalityTraits: data.personalityTraits,
+                awakening: data.progression?.awakening,
+                avatar: data.avatar
+              }
+            );
+
+            // Apply progression data if provided
+            if (data.progression) {
+              character.progression = {
+                ...character.progression,
+                ...data.progression
+              };
+            }
+          }
+
           const characterId = await firebaseService.createCharacter(
             userId,
             character

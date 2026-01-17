@@ -15,7 +15,7 @@ import { Character } from '../../../core/models';
             <img [src]="character.avatar!.photoUrl" class="avatar" alt="Avatar">
           } @else {
             <div class="avatar-placeholder" [style.background]="character.avatar?.backgroundColor || '#667eea'">
-              <ion-icon name="person"></ion-icon>
+              <ion-icon name="person-outline"></ion-icon>
             </div>
           }
           @if (character.progression?.awakening) {

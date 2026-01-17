@@ -226,3 +226,44 @@ code, .mono {
 .animate-float {
   animation: float 3s ease-in-out infinite;
 }
+
+/* Input Focus States - Enhanced visual feedback */
+ion-item.item-has-focus {
+  --background: rgba(102, 126, 234, 0.1);
+  --border-color: var(--ion-color-primary);
+  border-left: 3px solid var(--ion-color-primary);
+  transition: all 0.2s ease;
+}
+
+ion-item.item-has-focus ion-label {
+  color: var(--ion-color-primary) !important;
+}
+
+/* Input items general styling */
+ion-item.item-input {
+  --background: rgba(255, 255, 255, 0.05);
+  --border-color: rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  margin-bottom: 12px;
+  transition: all 0.2s ease;
+}
+
+ion-item.item-input:hover {
+  --background: rgba(255, 255, 255, 0.08);
+}
+
+/* Toggle styling */
+ion-toggle {
+  --track-background: rgba(255, 255, 255, 0.2);
+  --track-background-checked: var(--ion-color-primary);
+}
+
+/* Select styling */
+ion-select {
+  --placeholder-color: rgba(255, 255, 255, 0.5);
+}
+
+/* Textarea focus */
+ion-textarea.has-focus {
+  --border-color: var(--ion-color-primary);
+}

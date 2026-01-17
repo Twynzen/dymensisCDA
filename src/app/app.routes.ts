@@ -4,8 +4,11 @@ import { authGuard } from './core/guards/auth.guard';
 export const routes: Routes = [
   {
     path: '',
-    redirectTo: 'login',
-    pathMatch: 'full'
+    loadComponent: () => import('./modules/home/home.component').then(m => m.HomeComponent)
+  },
+  {
+    path: 'home',
+    loadComponent: () => import('./modules/home/home.component').then(m => m.HomeComponent)
   },
   {
     path: 'login',
@@ -57,6 +60,10 @@ export const routes: Routes = [
             loadComponent: () => import('./modules/universes/feature-editor/universe-editor.component').then(m => m.UniverseEditorComponent)
           },
           {
+            path: ':id',
+            loadComponent: () => import('./modules/universes/feature-detail/universe-detail.component').then(m => m.UniverseDetailComponent)
+          },
+          {
             path: ':id/edit',
             loadComponent: () => import('./modules/universes/feature-editor/universe-editor.component').then(m => m.UniverseEditorComponent)
           }
@@ -75,6 +82,6 @@ export const routes: Routes = [
   },
   {
     path: '**',
-    redirectTo: 'login'
+    redirectTo: ''
   }
 ];

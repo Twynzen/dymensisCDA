@@ -1,7 +1,7 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import { IonicModule, ToastController } from '@ionic/angular';
 import { AuthService } from '../../../core/services/auth.service';
 
@@ -90,20 +90,22 @@ type AuthMode = 'login' | 'register';
           </ion-button>
         </form>
 
-        <div class="divider">
-          <span>o continúa con</span>
-        </div>
+        @if (showGoogleLogin) {
+          <div class="divider">
+            <span>o continúa con</span>
+          </div>
 
-        <ion-button
-          expand="block"
-          fill="outline"
-          class="google-btn"
-          (click)="signInWithGoogle()"
-          [disabled]="authService.loading()"
-        >
-          <ion-icon name="logo-google" slot="start"></ion-icon>
-          Google
-        </ion-button>
+          <ion-button
+            expand="block"
+            fill="outline"
+            class="google-btn"
+            (click)="signInWithGoogle()"
+            [disabled]="authService.loading()"
+          >
+            <ion-icon name="logo-google" slot="start"></ion-icon>
+            Google
+          </ion-button>
+        }
 
         @if (mode() === 'login') {
           <ion-button
@@ -218,16 +220,33 @@ type AuthMode = 'login' | 'register';
     }
   `]
 })
-export class LoginComponent {
+export class LoginComponent implements OnInit {
   authService = inject(AuthService);
   private router = inject(Router);
+  private route = inject(ActivatedRoute);
   private toastController = inject(ToastController);
+
+  // Flag para mostrar/ocultar botón de Google (deshabilitado temporalmente)
+  showGoogleLogin = false;
 
   mode = signal<AuthMode>('login');
   email = '';
   password = '';
   displayName = '';
   showPassword = signal(false);
+  private returnUrl = '/tabs/characters';
+
+  ngOnInit(): void {
+    // Get return URL from query params
+    this.returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/tabs/characters';
+    console.log('[LoginComponent] Return URL:', this.returnUrl);
+
+    // Check if already authenticated
+    if (this.authService.isAuthenticated()) {
+      console.log('[LoginComponent] Already authenticated, redirecting...');
+      this.router.navigate([this.returnUrl]);
+    }
+  }
 
   togglePassword(): void {
     this.showPassword.update(show => !show);
@@ -240,22 +259,31 @@ export class LoginComponent {
     }
 
     try {
+      console.log('[LoginComponent] Attempting', this.mode(), 'with email:', this.email);
+
       if (this.mode() === 'login') {
         await this.authService.signInWithEmail(this.email, this.password);
       } else {
         await this.authService.signUpWithEmail(this.email, this.password, this.displayName);
       }
-      this.router.navigate(['/tabs/characters']);
-    } catch {
+
+      console.log('[LoginComponent] Auth successful! userId:', this.authService.userId());
+      console.log('[LoginComponent] Navigating to:', this.returnUrl);
+      this.router.navigate([this.returnUrl]);
+    } catch (error) {
+      console.error('[LoginComponent] Auth failed:', error);
       // Error is handled by the service and displayed in the template
     }
   }
 
   async signInWithGoogle(): Promise<void> {
     try {
+      console.log('[LoginComponent] Attempting Google sign in...');
       await this.authService.signInWithGoogle();
-      this.router.navigate(['/tabs/characters']);
-    } catch {
+      console.log('[LoginComponent] Google auth successful! userId:', this.authService.userId());
+      this.router.navigate([this.returnUrl]);
+    } catch (error) {
+      console.error('[LoginComponent] Google auth failed:', error);
       // Error is handled by the service
     }
   }
