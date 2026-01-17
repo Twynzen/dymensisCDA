@@ -116,15 +116,19 @@ export const CharacterStore = signalStore(
       ): Promise<string | null> {
         // Wait for auth to be ready before checking userId
         console.log('[CharacterStore] createCharacter: Waiting for auth to be ready...');
-        const isAuth = await authService.waitForAuthReady();
-        console.log('[CharacterStore] createCharacter: Auth ready, isAuthenticated:', isAuth);
+        await authService.waitForAuthReady();
 
-        const userId = authService.userId();
+        // Give Firebase a moment to fully restore session if needed
+        let userId = authService.userId();
+        if (!userId) {
+          console.log('[CharacterStore] createCharacter: No userId yet, waiting 500ms for session restore...');
+          await new Promise(resolve => setTimeout(resolve, 500));
+          userId = authService.userId();
+        }
+
         console.log('[CharacterStore] createCharacter: Auth state -', {
-          loading: authService.loading(),
           isAuthenticated: authService.isAuthenticated(),
-          userId: userId,
-          userEmail: authService.user()?.email
+          userId: userId
         });
 
         if (!userId) {

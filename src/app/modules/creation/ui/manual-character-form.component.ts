@@ -272,25 +272,8 @@ import { ImageUploadComponent } from '../../../shared';
           <!-- Step 4: Progression -->
           @if (currentStep() === 3) {
             <div class="form-section">
-              <h2>Nivel y Rango</h2>
-              <p class="section-desc">Define el nivel de poder inicial de tu personaje</p>
-
-              <ion-item>
-                <ion-range
-                  label="Nivel Inicial"
-                  labelPlacement="stacked"
-                  [(ngModel)]="character.level"
-                  [min]="1"
-                  [max]="10"
-                  [pin]="true"
-                  [snaps]="true"
-                  [ticks]="true"
-                >
-                  <ion-label slot="start">1</ion-label>
-                  <ion-label slot="end">10</ion-label>
-                </ion-range>
-              </ion-item>
-              <p class="level-label">Nivel: {{ character.level }}</p>
+              <h2>Rango y Título</h2>
+              <p class="section-desc">Tu rango se calcula según tus estadísticas</p>
 
               @if (selectedUniverse()?.awakeningSystem?.enabled) {
                 <div class="calculated-awakening-section">
@@ -398,7 +381,9 @@ import { ImageUploadComponent } from '../../../shared';
                     @if (character.title) {
                       <span class="title">{{ character.title }}</span>
                     }
-                    <span class="level">Nivel {{ character.level }}</span>
+                    @if (selectedUniverse()?.awakeningSystem?.enabled) {
+                      <span class="level">Rango {{ getCalculatedAwakening() }}</span>
+                    }
                   </div>
                 </div>
 
@@ -1230,7 +1215,7 @@ export class ManualCharacterFormComponent implements OnInit {
     { id: 'universe', label: 'Universo' },
     { id: 'basic', label: 'Básico' },
     { id: 'stats', label: 'Stats' },
-    { id: 'level', label: 'Nivel' },
+    { id: 'rank', label: 'Rango' },
     { id: 'appearance', label: 'Avatar' },
     { id: 'review', label: 'Revisar' }
   ];
@@ -1565,9 +1550,9 @@ export class ManualCharacterFormComponent implements OnInit {
         backgroundColor: this.character.backgroundColor
       },
       progression: {
-        level: this.character.level,
+        level: 1, // Always start at level 1
         experience: 0,
-        awakening: calculatedAwakening, // Use calculated awakening, not manual
+        awakening: calculatedAwakening,
         title: this.character.title || undefined
       }
     };
