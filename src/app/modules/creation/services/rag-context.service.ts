@@ -384,10 +384,14 @@ Reglas:
 ###UNIVERSO SELECCIONADO: ${universe.name}###
 ${universe.description}
 
+Puntos iniciales para distribuir: ${universe.initialPoints || 60}
+
 Stats disponibles:
 ${Object.entries(universe.statDefinitions).map(([key, def]) =>
-  `- ${def.name} (${def.abbreviation}): min ${def.minValue}, max ${def.maxValue}, default ${def.defaultValue}`
+  `- ${def.name} (${def.abbreviation}): min ${def.minValue}, max ${def.maxValue}`
 ).join('\n')}
+
+${universe.raceSystem?.enabled ? `Razas disponibles:\n${universe.raceSystem.races.map(r => `- ${r.name}: ${r.freePoints} puntos libres`).join('\n')}` : 'Sin sistema de razas - el jugador distribuye todos los puntos libremente'}
 
 Rangos: ${universe.awakeningSystem?.levels.join(' → ')}
 Thresholds de poder total: ${universe.awakeningSystem?.thresholds.join(', ')}

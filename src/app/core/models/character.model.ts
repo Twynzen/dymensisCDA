@@ -21,13 +21,20 @@ export interface Character {
   name: string;
   universeId: string;
   ownerId: string;
+  raceId?: string;
   createdAt: Date;
   updatedAt: Date;
   avatar: CharacterAvatar;
   stats: Record<string, number>;
+  baseStats?: Record<string, number>; // Stats before race modifiers
+  bonusStats?: Record<string, number>; // Points distributed manually by user
   derivedStats?: Record<string, number>;
   progression: CharacterProgression;
   sharing: CharacterSharing;
+  // Optional character details
+  description?: string;
+  backstory?: string;
+  personalityTraits?: string[];
 }
 
 export interface CharacterSkill {
@@ -66,23 +73,41 @@ export function createDefaultCharacter(
   name: string,
   universeId: string,
   ownerId: string,
-  defaultStats: Record<string, number>
+  defaultStats: Record<string, number>,
+  options?: {
+    raceId?: string;
+    baseStats?: Record<string, number>;
+    bonusStats?: Record<string, number>;
+    derivedStats?: Record<string, number>;
+    description?: string;
+    backstory?: string;
+    personalityTraits?: string[];
+    awakening?: string;
+    avatar?: CharacterAvatar;
+  }
 ): Character {
   return {
     name,
     universeId,
     ownerId,
+    raceId: options?.raceId,
     createdAt: new Date(),
     updatedAt: new Date(),
-    avatar: {
+    avatar: options?.avatar ?? {
       photoUrl: null,
       backgroundColor: '#1a1a2e'
     },
     stats: { ...defaultStats },
+    baseStats: options?.baseStats,
+    bonusStats: options?.bonusStats,
+    derivedStats: options?.derivedStats,
+    description: options?.description,
+    backstory: options?.backstory,
+    personalityTraits: options?.personalityTraits,
     progression: {
       level: 1,
       experience: 0,
-      awakening: 'E'
+      awakening: options?.awakening ?? 'E'
     },
     sharing: {
       isShared: false,

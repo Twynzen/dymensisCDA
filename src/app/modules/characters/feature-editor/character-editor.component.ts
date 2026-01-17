@@ -281,7 +281,7 @@ export class CharacterEditorComponent implements OnInit {
         name: def.name,
         abbreviation: def.abbreviation,
         icon: def.icon,
-        value: def.defaultValue,
+        value: 0, // Stats start at 0, points are distributed by user
         minValue: def.minValue,
         maxValue: def.maxValue,
         color: def.color
@@ -335,8 +335,8 @@ export class CharacterEditorComponent implements OnInit {
       const defaultStats: Record<string, number> = {};
       Object.entries(universe.statDefinitions)
         .filter(([, def]) => !def.isDerived)
-        .forEach(([key, def]) => {
-          defaultStats[key] = def.defaultValue;
+        .forEach(([key]) => {
+          defaultStats[key] = 0; // Stats start at 0, points are distributed by user
         });
       this.stats.set(defaultStats);
     }

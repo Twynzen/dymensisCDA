@@ -9,7 +9,7 @@ import { IonicModule } from '@ionic/angular';
   template: `
     <div class="typing-wrapper">
       <div class="avatar">
-        <ion-icon name="sparkles"></ion-icon>
+        <ion-icon name="sparkles-outline"></ion-icon>
       </div>
       <div class="typing-bubble">
         <div class="typing-dots">

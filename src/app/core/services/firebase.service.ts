@@ -47,29 +47,45 @@ export class FirebaseService {
   }
 
   async getPublicUniverses(): Promise<Universe[]> {
+    // Query sin orderBy para evitar necesitar índice compuesto
+    // Ordenamos en el cliente
     const q = query(
       this.getUniversesCollection(),
-      where('isPublic', '==', true),
-      orderBy('createdAt', 'desc')
+      where('isPublic', '==', true)
     );
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({
+    const universes = snapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
     })) as Universe[];
+
+    // Ordenar en cliente por createdAt descendente
+    return universes.sort((a, b) => {
+      const dateA = a.createdAt instanceof Date ? a.createdAt : new Date(a.createdAt as any);
+      const dateB = b.createdAt instanceof Date ? b.createdAt : new Date(b.createdAt as any);
+      return dateB.getTime() - dateA.getTime();
+    });
   }
 
   async getUserUniverses(userId: string): Promise<Universe[]> {
+    // Query sin orderBy para evitar necesitar índice compuesto
+    // Ordenamos en el cliente
     const q = query(
       this.getUniversesCollection(),
-      where('createdBy', '==', userId),
-      orderBy('createdAt', 'desc')
+      where('createdBy', '==', userId)
     );
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({
+    const universes = snapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
     })) as Universe[];
+
+    // Ordenar en cliente por createdAt descendente
+    return universes.sort((a, b) => {
+      const dateA = a.createdAt instanceof Date ? a.createdAt : new Date(a.createdAt as any);
+      const dateB = b.createdAt instanceof Date ? b.createdAt : new Date(b.createdAt as any);
+      return dateB.getTime() - dateA.getTime();
+    });
   }
 
   async getUniverse(universeId: string): Promise<Universe | null> {

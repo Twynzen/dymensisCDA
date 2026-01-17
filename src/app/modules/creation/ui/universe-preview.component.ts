@@ -10,7 +10,7 @@ import { Universe } from '../../../core/models';
   template: `
     <div class="preview-card">
       <div class="preview-header" [style.background]="getHeaderBackground()">
-        <ion-icon name="planet" class="preview-icon"></ion-icon>
+        <ion-icon name="planet-outline" class="preview-icon"></ion-icon>
         <h2>{{ universe.name }}</h2>
       </div>
 

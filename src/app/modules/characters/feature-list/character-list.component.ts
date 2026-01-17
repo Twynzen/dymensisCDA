@@ -147,28 +147,8 @@ export class CharacterListComponent implements OnInit {
     this.router.navigate(['/tabs/characters', characterId]);
   }
 
-  async createCharacter(): Promise<void> {
-    const universes = this.universeStore.allUniverses();
-
-    if (universes.length === 0) {
-      const alert = await this.alertController.create({
-        header: 'Sin Universos',
-        message: 'Primero debes crear o seleccionar un universo de reglas.',
-        buttons: [
-          { text: 'Cancelar', role: 'cancel' },
-          {
-            text: 'Crear Universo',
-            handler: () => {
-              this.router.navigate(['/tabs/universes/new']);
-            }
-          }
-        ]
-      });
-      await alert.present();
-      return;
-    }
-
-    this.router.navigate(['/tabs/characters/new']);
+  createCharacter(): void {
+    this.router.navigate(['/tabs/creation']);
   }
 
   async showActions(character: any): Promise<void> {

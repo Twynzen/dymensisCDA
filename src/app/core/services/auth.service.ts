@@ -24,11 +24,14 @@ export interface AuthUser {
 export class AuthService {
   private auth = inject(Auth);
   private googleProvider = new GoogleAuthProvider();
+  private authReadyResolver!: () => void;
+  private authReadyPromise: Promise<void>;
 
   // Reactive state with signals
   private _user = signal<AuthUser | null>(null);
   private _loading = signal(true);
   private _error = signal<string | null>(null);
+  private _initialized = signal(false);
 
   // Public computed signals
   user = this._user.asReadonly();
@@ -36,19 +39,46 @@ export class AuthService {
   error = this._error.asReadonly();
   isAuthenticated = computed(() => this._user() !== null);
   userId = computed(() => this._user()?.uid ?? null);
+  initialized = this._initialized.asReadonly();
 
   constructor() {
+    // Create promise that resolves when auth is ready
+    this.authReadyPromise = new Promise<void>((resolve) => {
+      this.authReadyResolver = resolve;
+    });
     this.initAuthListener();
   }
 
+  /**
+   * Returns a promise that resolves when Firebase Auth has finished
+   * checking for an existing session. Use this before operations that
+   * require knowing the auth state.
+   */
+  async waitForAuthReady(): Promise<boolean> {
+    await this.authReadyPromise;
+    return this.isAuthenticated();
+  }
+
   private initAuthListener(): void {
+    console.log('[AuthService] Initializing auth listener...');
     onAuthStateChanged(this.auth, (user) => {
+      console.log('[AuthService] Auth state changed:', {
+        hasUser: !!user,
+        userId: user?.uid,
+        email: user?.email
+      });
+
       if (user) {
         this._user.set(this.mapUser(user));
       } else {
         this._user.set(null);
       }
+
       this._loading.set(false);
+      this._initialized.set(true);
+
+      // Resolve the ready promise on first auth state
+      this.authReadyResolver();
     });
   }
 
@@ -163,9 +193,19 @@ export class AuthService {
       'auth/too-many-requests': 'Demasiados intentos. Intenta más tarde',
       'auth/popup-closed-by-user': 'Inicio de sesión cancelado',
       'auth/network-request-failed': 'Error de conexión. Verifica tu internet',
-      'auth/invalid-credential': 'Credenciales inválidas'
+      'auth/invalid-credential': 'El correo o la contraseña son incorrectos',
+      'auth/invalid-login-credentials': 'El correo o la contraseña son incorrectos',
+      'auth/user-disabled': 'Esta cuenta ha sido deshabilitada',
+      'auth/operation-not-allowed': 'Este método de inicio de sesión no está habilitado',
+      'auth/account-exists-with-different-credential': 'Ya existe una cuenta con este correo usando otro método',
+      'auth/requires-recent-login': 'Por seguridad, vuelve a iniciar sesión',
+      'auth/credential-already-in-use': 'Esta credencial ya está asociada a otra cuenta',
+      'auth/timeout': 'La solicitud tardó demasiado. Intenta de nuevo',
+      'auth/missing-email': 'Debes ingresar un correo electrónico',
+      'auth/missing-password': 'Debes ingresar una contraseña'
     };
 
-    return errorMessages[code] || 'Ha ocurrido un error inesperado';
+    console.error('Firebase Auth Error:', code);
+    return errorMessages[code] || `Error de autenticación: ${code}`;
   }
 }

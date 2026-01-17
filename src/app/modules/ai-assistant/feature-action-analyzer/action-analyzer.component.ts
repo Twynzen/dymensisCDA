@@ -121,7 +121,7 @@ import { fadeInAnimation } from '../../../shared/animations/stat-animations';
               @if (analyzing()) {
                 <ion-spinner name="crescent"></ion-spinner>
               } @else {
-                <ion-icon slot="start" name="sparkles"></ion-icon>
+                <ion-icon slot="start" name="sparkles-outline"></ion-icon>
                 Analizar Acción
               }
             </ion-button>

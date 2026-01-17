@@ -44,7 +44,7 @@ import { fadeInAnimation, statChangeAnimation } from '../../../shared/animations
               <img [src]="character()!.avatar?.photoUrl" class="avatar" alt="Avatar">
             } @else {
               <div class="avatar-placeholder">
-                <ion-icon name="person"></ion-icon>
+                <ion-icon name="person-outline"></ion-icon>
               </div>
             }
             <div class="awakening-badge" [class]="'rank-' + character()!.progression.awakening">
@@ -174,7 +174,7 @@ import { fadeInAnimation, statChangeAnimation } from '../../../shared/animations
 
         <ion-fab slot="fixed" vertical="bottom" horizontal="end">
           <ion-fab-button (click)="analyzeAction()">
-            <ion-icon name="sparkles"></ion-icon>
+            <ion-icon name="sparkles-outline"></ion-icon>
           </ion-fab-button>
         </ion-fab>
       }

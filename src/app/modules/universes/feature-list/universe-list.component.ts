@@ -44,12 +44,19 @@ import { Universe } from '../../../core/models';
           <ion-list>
             @for (universe of universeStore.userUniverses(); track universe.id) {
               <ion-item-sliding @fadeIn>
-                <ion-item (click)="viewUniverse(universe)" button>
-                  <ion-icon
-                    [name]="universe.isPublic ? 'globe-outline' : 'lock-closed-outline'"
-                    slot="start"
-                    [color]="universe.isPublic ? 'primary' : 'medium'"
-                  ></ion-icon>
+                <ion-item (click)="viewUniverse(universe)" button class="universe-item">
+                  <div class="universe-thumb" slot="start">
+                    @if (universe.coverImage) {
+                      <img [src]="universe.coverImage" [alt]="universe.name" />
+                    } @else {
+                      <div class="thumb-placeholder">
+                        <ion-icon name="planet-outline"></ion-icon>
+                      </div>
+                    }
+                    <div class="visibility-badge" [class.public]="universe.isPublic">
+                      <ion-icon [name]="universe.isPublic ? 'globe-outline' : 'lock-closed-outline'"></ion-icon>
+                    </div>
+                  </div>
                   <ion-label>
                     <h2>{{ universe.name }}</h2>
                     <p>{{ universe.description }}</p>
@@ -81,8 +88,19 @@ import { Universe } from '../../../core/models';
 
           <ion-list>
             @for (universe of publicUniverses(); track universe.id) {
-              <ion-item @fadeIn (click)="viewUniverse(universe)" button>
-                <ion-icon name="globe-outline" slot="start" color="primary"></ion-icon>
+              <ion-item @fadeIn (click)="viewUniverse(universe)" button class="universe-item">
+                <div class="universe-thumb" slot="start">
+                  @if (universe.coverImage) {
+                    <img [src]="universe.coverImage" [alt]="universe.name" />
+                  } @else {
+                    <div class="thumb-placeholder">
+                      <ion-icon name="planet-outline"></ion-icon>
+                    </div>
+                  }
+                  <div class="visibility-badge public">
+                    <ion-icon name="globe-outline"></ion-icon>
+                  </div>
+                </div>
                 <ion-label>
                   <h2>{{ universe.name }}</h2>
                   <p>{{ universe.description }}</p>
@@ -92,33 +110,27 @@ import { Universe } from '../../../core/models';
                     {{ universe.progressionRules.length }} reglas
                   </p>
                 </ion-label>
-                <ion-badge slot="end" color="primary">Público</ion-badge>
               </ion-item>
             }
           </ion-list>
         }
 
-        @if (universeStore.allUniverses().length === 0) {
+        <!-- Empty State - No universes yet -->
+        @if (universeStore.allUniverses().length === 0 && !universeStore.loading()) {
           <div class="empty-state">
             <ion-icon name="planet-outline" class="empty-icon"></ion-icon>
-            <h2>Sin universos</h2>
-            <p>Crea tu primer universo de reglas para comenzar</p>
-            <ion-button (click)="createUniverse()">
+            <h2>No tienes universos</h2>
+            <p>Los universos definen las reglas, estadísticas y razas para tus personajes. Crea tu primer universo para comenzar.</p>
+            <ion-button (click)="createUniverse()" size="large">
               <ion-icon slot="start" name="add"></ion-icon>
-              Crear Universo
+              Crear mi primer Universo
+            </ion-button>
+            <ion-button fill="clear" (click)="loadData()" class="refresh-btn">
+              <ion-icon slot="start" name="refresh"></ion-icon>
+              Recargar
             </ion-button>
           </div>
         }
-      }
-
-      @if (universeStore.error()) {
-        <ion-toast
-          [isOpen]="true"
-          [message]="universeStore.error()!"
-          duration="3000"
-          color="danger"
-          (didDismiss)="universeStore.setError(null)"
-        ></ion-toast>
       }
     </ion-content>
   `,
@@ -160,6 +172,13 @@ import { Universe } from '../../../core/models';
     .empty-state p {
       margin: 0 0 24px 0;
       opacity: 0.6;
+      max-width: 300px;
+      line-height: 1.5;
+    }
+
+    .refresh-btn {
+      margin-top: 12px;
+      opacity: 0.7;
     }
 
     ion-list-header {
@@ -176,6 +195,63 @@ import { Universe } from '../../../core/models';
 
     .dot {
       font-size: 4px;
+    }
+
+    .universe-item {
+      --padding-start: 12px;
+    }
+
+    .universe-thumb {
+      position: relative;
+      width: 56px;
+      height: 56px;
+      flex-shrink: 0;
+      margin-right: 12px;
+    }
+
+    .universe-thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 10px;
+    }
+
+    .thumb-placeholder {
+      width: 100%;
+      height: 100%;
+      border-radius: 10px;
+      background: linear-gradient(135deg, rgba(102, 126, 234, 0.4), rgba(118, 75, 162, 0.4));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .thumb-placeholder ion-icon {
+      font-size: 28px;
+      color: rgba(255, 255, 255, 0.7);
+    }
+
+    .visibility-badge {
+      position: absolute;
+      bottom: -3px;
+      right: -3px;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: var(--ion-color-medium);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 2px solid var(--ion-background-color);
+    }
+
+    .visibility-badge.public {
+      background: var(--ion-color-success);
+    }
+
+    .visibility-badge ion-icon {
+      font-size: 10px;
+      color: white;
     }
   `]
 })
@@ -217,44 +293,8 @@ export class UniverseListComponent implements OnInit {
     this.router.navigate(['/tabs/universes', universe.id, 'edit']);
   }
 
-  async createUniverse(): Promise<void> {
-    const alert = await this.alertController.create({
-      header: 'Nuevo Universo',
-      inputs: [
-        {
-          name: 'name',
-          type: 'text',
-          placeholder: 'Nombre del universo'
-        },
-        {
-          name: 'description',
-          type: 'textarea',
-          placeholder: 'Descripción (opcional)'
-        }
-      ],
-      buttons: [
-        { text: 'Cancelar', role: 'cancel' },
-        {
-          text: 'Crear',
-          handler: async (data) => {
-            if (!data.name?.trim()) return false;
-
-            const universeId = await this.universeStore.createUniverse(
-              data.name.trim(),
-              data.description?.trim() || '',
-              false
-            );
-
-            if (universeId) {
-              this.router.navigate(['/tabs/universes', universeId, 'edit']);
-            }
-            return true;
-          }
-        }
-      ]
-    });
-
-    await alert.present();
+  createUniverse(): void {
+    this.router.navigate(['/tabs/creation']);
   }
 
   async confirmDelete(universe: Universe): Promise<void> {
