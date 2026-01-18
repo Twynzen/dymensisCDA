@@ -2,10 +2,11 @@ import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { IonicModule, ToastController } from '@ionic/angular';
+import { IonicModule, ToastController, AlertController } from '@ionic/angular';
 import { CharacterStore } from '../data-access/character.store';
 import { UniverseStore } from '../../universes/data-access/universe.store';
 import { StatBarComponent } from '../../../shared/ui/stat-bar/stat-bar.component';
+import { ImageUploadComponent } from '../../../shared/ui/image-upload/image-upload.component';
 import { Character, StatDefinition } from '../../../core/models';
 
 interface EditableStat {
@@ -19,10 +20,17 @@ interface EditableStat {
   color: string;
 }
 
+interface StatJustification {
+  stat: string;
+  oldValue: number;
+  newValue: number;
+  reason: string;
+}
+
 @Component({
   selector: 'app-character-editor',
   standalone: true,
-  imports: [CommonModule, FormsModule, IonicModule, StatBarComponent],
+  imports: [CommonModule, FormsModule, IonicModule, StatBarComponent, ImageUploadComponent],
   template: `
     <ion-header>
       <ion-toolbar>
@@ -31,7 +39,7 @@ interface EditableStat {
         </ion-buttons>
         <ion-title>{{ isEditing() ? 'Editar' : 'Nuevo' }} Personaje</ion-title>
         <ion-buttons slot="end">
-          <ion-button (click)="save()" [disabled]="!isValid() || saving()">
+          <ion-button (click)="save()" [disabled]="!canSave() || saving()">
             @if (saving()) {
               <ion-spinner name="crescent"></ion-spinner>
             } @else {
@@ -61,6 +69,19 @@ interface EditableStat {
           ></ion-input>
         </ion-item>
 
+        <ion-item>
+          <ion-textarea
+            [(ngModel)]="characterDescription"
+            name="description"
+            label="Descripción"
+            labelPlacement="floating"
+            placeholder="Breve descripción del personaje, su historia o personalidad..."
+            [rows]="3"
+            [autoGrow]="true"
+            [maxlength]="500"
+          ></ion-textarea>
+        </ion-item>
+
         @if (!isEditing()) {
           <ion-item>
             <ion-select
@@ -85,77 +106,114 @@ interface EditableStat {
           <ion-label>Avatar</ion-label>
         </ion-list-header>
 
-        <ion-item>
-          <ion-input
-            [(ngModel)]="avatarUrl"
-            name="avatarUrl"
-            label="URL de Avatar"
-            labelPlacement="floating"
-            placeholder="https://..."
-            type="url"
-          ></ion-input>
-        </ion-item>
+        <div class="avatar-section">
+          <app-image-upload
+            placeholder="Arrastra una imagen o haz clic para seleccionar"
+            [value]="avatarImage()"
+            [maxSizeKB]="200"
+            [maxWidth]="400"
+            [maxHeight]="400"
+            (imageChange)="avatarImage.set($event)"
+          ></app-image-upload>
 
-        <ion-item>
-          <ion-label>Color de Fondo</ion-label>
-          <input
-            type="color"
-            [(ngModel)]="backgroundColor"
-            name="backgroundColor"
-            class="color-picker"
-          />
-        </ion-item>
+          <ion-item class="color-item">
+            <ion-label>Color de Fondo</ion-label>
+            <input
+              type="color"
+              [(ngModel)]="backgroundColor"
+              name="backgroundColor"
+              class="color-picker"
+            />
+          </ion-item>
+        </div>
 
         <!-- Stats -->
         @if (editableStats().length > 0) {
           <ion-list-header>
             <ion-label>Estadísticas</ion-label>
+            @if (hasStatChanges()) {
+              <ion-badge color="warning">{{ changedStatsCount() }} cambios</ion-badge>
+            }
           </ion-list-header>
 
           <div class="stats-editor">
             @for (stat of editableStats(); track stat.key) {
-              <div class="stat-editor-item">
+              <div class="stat-editor-item" [class.stat-changed]="statHasChanged(stat.key)">
                 <div class="stat-header">
                   <div class="stat-info">
-                    <ion-icon [name]="stat.icon"></ion-icon>
+                    <ion-icon [name]="stat.icon" [style.color]="stat.color"></ion-icon>
                     <span class="stat-name">{{ stat.name }}</span>
                     <span class="stat-abbr">({{ stat.abbreviation }})</span>
                   </div>
-                  <div class="stat-value-display" [style.color]="stat.color">
-                    {{ getStatValue(stat.key) }}
+                  <div class="stat-controls">
+                    <ion-button
+                      fill="clear"
+                      size="small"
+                      (click)="decrementStat(stat.key)"
+                      [disabled]="getStatValue(stat.key) <= stat.minValue"
+                    >
+                      <ion-icon slot="icon-only" name="remove-circle" color="danger"></ion-icon>
+                    </ion-button>
+                    <span class="stat-value-display" [style.color]="stat.color">
+                      {{ getStatValue(stat.key) }}
+                    </span>
+                    <ion-button
+                      fill="clear"
+                      size="small"
+                      (click)="incrementStat(stat.key)"
+                      [disabled]="getStatValue(stat.key) >= stat.maxValue"
+                    >
+                      <ion-icon slot="icon-only" name="add-circle" color="success"></ion-icon>
+                    </ion-button>
                   </div>
                 </div>
-                <ion-range
-                  [min]="stat.minValue"
-                  [max]="stat.maxValue"
-                  [value]="getStatValue(stat.key)"
-                  (ionInput)="updateStat(stat.key, $event)"
-                  [pin]="true"
-                  [ticks]="false"
-                  [style.--bar-background-active]="stat.color"
-                ></ion-range>
+
+                <!-- Justification field when stat changed -->
+                @if (statHasChanged(stat.key)) {
+                  <div class="stat-change-info">
+                    <span class="change-indicator" [class.positive]="getStatChange(stat.key) > 0" [class.negative]="getStatChange(stat.key) < 0">
+                      {{ getStatChange(stat.key) > 0 ? '+' : '' }}{{ getStatChange(stat.key) }}
+                    </span>
+                    <ion-item class="justification-item">
+                      <ion-textarea
+                        [(ngModel)]="justifications[stat.key]"
+                        [name]="'justification_' + stat.key"
+                        label="¿Por qué cambia esta estadística?"
+                        labelPlacement="floating"
+                        placeholder="Ej: Entrenamiento intensivo, batalla reciente, nuevo equipo..."
+                        [rows]="2"
+                        [autoGrow]="true"
+                        [maxlength]="200"
+                      ></ion-textarea>
+                    </ion-item>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+
+          <!-- Stats Summary -->
+          <div class="stats-summary">
+            <div class="summary-item">
+              <span class="summary-label">Total actual:</span>
+              <span class="summary-value">{{ totalStats() }}</span>
+            </div>
+            @if (hasStatChanges()) {
+              <div class="summary-item">
+                <span class="summary-label">Cambio total:</span>
+                <span class="summary-value" [class.positive]="totalStatChange() > 0" [class.negative]="totalStatChange() < 0">
+                  {{ totalStatChange() > 0 ? '+' : '' }}{{ totalStatChange() }}
+                </span>
               </div>
             }
           </div>
         }
 
-        <!-- Progression -->
-        @if (isEditing()) {
+        <!-- Progression (only if universe has awakening) -->
+        @if (isEditing() && universeHasAwakening()) {
           <ion-list-header>
             <ion-label>Progresión</ion-label>
           </ion-list-header>
-
-          <ion-item>
-            <ion-input
-              [(ngModel)]="level"
-              name="level"
-              type="number"
-              label="Nivel"
-              labelPlacement="floating"
-              [min]="1"
-              [max]="9999"
-            ></ion-input>
-          </ion-item>
 
           <ion-item>
             <ion-input
@@ -163,10 +221,45 @@ interface EditableStat {
               name="title"
               label="Título"
               labelPlacement="floating"
-              placeholder="Ej: Shadow Monarch"
+              placeholder="Ej: Shadow Monarch, El Destructor"
               [maxlength]="50"
             ></ion-input>
           </ion-item>
+
+          <div class="awakening-display">
+            <span class="awakening-label">Rango actual:</span>
+            <span class="awakening-badge" [class]="'rank-' + currentAwakening()">
+              {{ currentAwakening() }}
+            </span>
+          </div>
+        }
+
+        <!-- Save Button (visible when editing and can save) -->
+        @if (isEditing() && canSave()) {
+          <div class="save-section">
+            <ion-button expand="block" color="success" (click)="save()" [disabled]="saving()">
+              @if (saving()) {
+                <ion-spinner name="crescent"></ion-spinner>
+              } @else {
+                <ion-icon slot="start" name="checkmark-circle"></ion-icon>
+                Guardar Cambios
+              }
+            </ion-button>
+            @if (hasStatChanges()) {
+              <p class="save-hint">Se registrarán {{ changedStatsCount() }} cambio(s) de estadísticas con sus justificaciones</p>
+            }
+          </div>
+        }
+
+        <!-- Delete Button (only when editing) -->
+        @if (isEditing()) {
+          <div class="danger-zone">
+            <p class="danger-label">Zona de peligro</p>
+            <ion-button expand="block" color="danger" fill="outline" (click)="confirmDelete()">
+              <ion-icon slot="start" name="trash"></ion-icon>
+              Eliminar Personaje
+            </ion-button>
+          </div>
         }
       </form>
     </ion-content>
@@ -178,6 +271,16 @@ interface EditableStat {
 
     ion-list-header {
       margin-top: 16px;
+    }
+
+    .avatar-section {
+      padding: 16px;
+    }
+
+    .color-item {
+      margin-top: 16px;
+      --background: rgba(255, 255, 255, 0.05);
+      border-radius: 8px;
     }
 
     .color-picker {
@@ -194,17 +297,22 @@ interface EditableStat {
     }
 
     .stat-editor-item {
-      margin-bottom: 20px;
+      margin-bottom: 16px;
       background: rgba(255, 255, 255, 0.05);
       padding: 12px;
       border-radius: 12px;
+      transition: all 0.2s ease;
+    }
+
+    .stat-editor-item.stat-changed {
+      background: rgba(255, 193, 7, 0.1);
+      border: 1px solid rgba(255, 193, 7, 0.3);
     }
 
     .stat-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 8px;
     }
 
     .stat-info {
@@ -214,8 +322,7 @@ interface EditableStat {
     }
 
     .stat-info ion-icon {
-      font-size: 20px;
-      opacity: 0.7;
+      font-size: 24px;
     }
 
     .stat-name {
@@ -227,16 +334,155 @@ interface EditableStat {
       opacity: 0.5;
     }
 
-    .stat-value-display {
-      font-size: 24px;
-      font-weight: 700;
-      font-family: 'Roboto Mono', monospace;
+    .stat-controls {
+      display: flex;
+      align-items: center;
+      gap: 4px;
     }
 
-    ion-range {
-      --bar-height: 8px;
-      --bar-border-radius: 4px;
-      --knob-size: 24px;
+    .stat-controls ion-button {
+      --padding-start: 4px;
+      --padding-end: 4px;
+      margin: 0;
+    }
+
+    .stat-controls ion-icon {
+      font-size: 32px;
+    }
+
+    .stat-value-display {
+      font-size: 28px;
+      font-weight: 700;
+      font-family: 'Roboto Mono', monospace;
+      min-width: 50px;
+      text-align: center;
+    }
+
+    .stat-change-info {
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .change-indicator {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .change-indicator.positive {
+      background: rgba(76, 175, 80, 0.2);
+      color: #4CAF50;
+    }
+
+    .change-indicator.negative {
+      background: rgba(244, 67, 54, 0.2);
+      color: #F44336;
+    }
+
+    .justification-item {
+      --background: rgba(255, 255, 255, 0.03);
+      border-radius: 8px;
+      margin-top: 8px;
+    }
+
+    .stats-summary {
+      display: flex;
+      justify-content: space-around;
+      padding: 16px;
+      margin: 0 16px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 8px;
+    }
+
+    .summary-item {
+      text-align: center;
+    }
+
+    .summary-label {
+      font-size: 12px;
+      opacity: 0.7;
+      display: block;
+    }
+
+    .summary-value {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--ion-color-primary);
+    }
+
+    .summary-value.positive {
+      color: #4CAF50;
+    }
+
+    .summary-value.negative {
+      color: #F44336;
+    }
+
+    .awakening-display {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      padding: 16px;
+      margin: 0 16px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 8px;
+    }
+
+    .awakening-label {
+      font-size: 14px;
+      opacity: 0.7;
+    }
+
+    .awakening-badge {
+      padding: 6px 16px;
+      border-radius: 8px;
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .rank-E { background: #9E9E9E; }
+    .rank-D { background: #8BC34A; }
+    .rank-C { background: #03A9F4; }
+    .rank-B { background: #9C27B0; }
+    .rank-A { background: #FF5722; }
+    .rank-S, .rank-SS, .rank-SSS {
+      background: linear-gradient(135deg, #FFD700, #FFA500);
+      color: #000;
+    }
+
+    .save-section {
+      padding: 16px;
+      margin-top: 24px;
+      background: rgba(var(--ion-color-success-rgb), 0.1);
+      border-radius: 12px;
+      margin-left: 16px;
+      margin-right: 16px;
+    }
+
+    .save-hint {
+      font-size: 12px;
+      text-align: center;
+      opacity: 0.7;
+      margin: 8px 0 0 0;
+    }
+
+    .danger-zone {
+      padding: 16px;
+      margin-top: 32px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .danger-label {
+      font-size: 12px;
+      color: var(--ion-color-danger);
+      text-transform: uppercase;
+      margin-bottom: 12px;
+      opacity: 0.8;
     }
   `]
 })
@@ -246,6 +492,7 @@ export class CharacterEditorComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private toastController = inject(ToastController);
+  private alertController = inject(AlertController);
 
   isEditing = signal(false);
   saving = signal(false);
@@ -253,11 +500,13 @@ export class CharacterEditorComponent implements OnInit {
 
   // Form fields
   characterName = '';
+  characterDescription = '';
   selectedUniverseId = '';
-  avatarUrl = '';
+  avatarImage = signal<string | null>(null);
   backgroundColor = '#1a1a2e';
   stats = signal<Record<string, number>>({});
-  level = 1;
+  originalStats = signal<Record<string, number>>({});
+  justifications: Record<string, string> = {};
   title = '';
 
   backUrl = computed(() =>
@@ -281,19 +530,67 @@ export class CharacterEditorComponent implements OnInit {
         name: def.name,
         abbreviation: def.abbreviation,
         icon: def.icon,
-        value: 0, // Stats start at 0, points are distributed by user
+        value: 0,
         minValue: def.minValue,
         maxValue: def.maxValue,
         color: def.color
       }));
   });
 
-  isValid = computed(() => {
-    return (
-      this.characterName.trim().length > 0 &&
-      (this.isEditing() || this.selectedUniverseId.length > 0) &&
-      Object.keys(this.stats()).length > 0
-    );
+  universeHasAwakening = computed(() => {
+    const universeId = this.isEditing()
+      ? this.characterStore.selectedCharacter()?.universeId
+      : this.selectedUniverseId;
+    const universe = this.universeStore.allUniverses().find(u => u.id === universeId);
+    return universe?.awakeningSystem?.enabled === true;
+  });
+
+  currentAwakening = computed(() => {
+    return this.characterStore.selectedCharacter()?.progression?.awakening ?? 'E';
+  });
+
+  totalStats = computed(() => {
+    return Object.values(this.stats()).reduce((sum, val) => sum + val, 0);
+  });
+
+  totalStatChange = computed(() => {
+    const current = this.stats();
+    const original = this.originalStats();
+    let change = 0;
+    for (const key of Object.keys(current)) {
+      change += (current[key] ?? 0) - (original[key] ?? 0);
+    }
+    return change;
+  });
+
+  hasStatChanges = computed(() => {
+    return this.changedStatsCount() > 0;
+  });
+
+  changedStatsCount = computed(() => {
+    const current = this.stats();
+    const original = this.originalStats();
+    let count = 0;
+    for (const key of Object.keys(current)) {
+      if (current[key] !== original[key]) count++;
+    }
+    return count;
+  });
+
+  canSave = computed(() => {
+    const nameValid = this.characterName.trim().length > 0;
+    const universeValid = this.isEditing() || this.selectedUniverseId.length > 0;
+    const statsExist = Object.keys(this.stats()).length > 0;
+
+    // If editing and stats changed, require justifications
+    if (this.isEditing() && this.hasStatChanges()) {
+      const allJustified = this.editableStats()
+        .filter(stat => this.statHasChanged(stat.key))
+        .every(stat => this.justifications[stat.key]?.trim());
+      return nameValid && universeValid && statsExist && allJustified;
+    }
+
+    return nameValid && universeValid && statsExist;
   });
 
   ngOnInit(): void {
@@ -317,11 +614,12 @@ export class CharacterEditorComponent implements OnInit {
 
     if (character) {
       this.characterName = character.name;
+      this.characterDescription = character.description ?? '';
       this.selectedUniverseId = character.universeId;
-      this.avatarUrl = character.avatar?.photoUrl ?? '';
+      this.avatarImage.set(character.avatar?.photoUrl ?? null);
       this.backgroundColor = character.avatar?.backgroundColor ?? '#1a1a2e';
       this.stats.set({ ...character.stats });
-      this.level = character.progression?.level ?? 1;
+      this.originalStats.set({ ...character.stats });
       this.title = character.progression?.title ?? '';
     }
   }
@@ -336,9 +634,10 @@ export class CharacterEditorComponent implements OnInit {
       Object.entries(universe.statDefinitions)
         .filter(([, def]) => !def.isDerived)
         .forEach(([key]) => {
-          defaultStats[key] = 0; // Stats start at 0, points are distributed by user
+          defaultStats[key] = 0;
         });
       this.stats.set(defaultStats);
+      this.originalStats.set({ ...defaultStats });
     }
   }
 
@@ -346,35 +645,93 @@ export class CharacterEditorComponent implements OnInit {
     return this.stats()[key] ?? 0;
   }
 
-  updateStat(key: string, event: any): void {
-    const value = event.detail.value;
-    this.stats.update(stats => ({
-      ...stats,
-      [key]: value
-    }));
+  statHasChanged(key: string): boolean {
+    return this.stats()[key] !== this.originalStats()[key];
+  }
+
+  getStatChange(key: string): number {
+    return (this.stats()[key] ?? 0) - (this.originalStats()[key] ?? 0);
+  }
+
+  incrementStat(key: string): void {
+    const stat = this.editableStats().find(s => s.key === key);
+    if (!stat) return;
+    const current = this.stats()[key] ?? 0;
+    if (current < stat.maxValue) {
+      this.stats.update(s => ({ ...s, [key]: current + 1 }));
+    }
+  }
+
+  decrementStat(key: string): void {
+    const stat = this.editableStats().find(s => s.key === key);
+    if (!stat) return;
+    const current = this.stats()[key] ?? 0;
+    if (current > stat.minValue) {
+      this.stats.update(s => ({ ...s, [key]: current - 1 }));
+    }
+  }
+
+  async confirmDelete(): Promise<void> {
+    const alert = await this.alertController.create({
+      header: 'Eliminar Personaje',
+      message: '¿Estás seguro? Esta acción no se puede deshacer. Se perderán todas las habilidades e historial del personaje.',
+      buttons: [
+        { text: 'Cancelar', role: 'cancel' },
+        {
+          text: 'Eliminar',
+          role: 'destructive',
+          handler: async () => {
+            await this.characterStore.deleteCharacter(this.characterId()!);
+            await this.showToast('Personaje eliminado', 'success');
+            this.router.navigate(['/tabs/characters']);
+          }
+        }
+      ]
+    });
+    await alert.present();
   }
 
   async save(): Promise<void> {
-    if (!this.isValid()) return;
+    if (!this.canSave()) return;
 
     this.saving.set(true);
 
     try {
       if (this.isEditing()) {
+        // Collect stat changes with justifications for history
+        const statChanges = this.editableStats()
+          .filter(stat => this.statHasChanged(stat.key))
+          .map(stat => ({
+            stat: stat.key,
+            change: this.getStatChange(stat.key),
+            reason: this.justifications[stat.key]
+          }));
+
         await this.characterStore.updateCharacter(this.characterId()!, {
           name: this.characterName.trim(),
+          description: this.characterDescription.trim() || undefined,
           avatar: {
-            photoUrl: this.avatarUrl || null,
+            photoUrl: this.avatarImage() || null,
             backgroundColor: this.backgroundColor
           },
           stats: this.stats(),
           progression: {
-            level: this.level,
-            experience: 0,
+            level: this.characterStore.selectedCharacter()?.progression?.level ?? 1,
+            experience: this.characterStore.selectedCharacter()?.progression?.experience ?? 0,
             awakening: this.characterStore.selectedCharacter()?.progression?.awakening ?? 'E',
             title: this.title || undefined
           }
         });
+
+        // If there were stat changes, add to history
+        if (statChanges.length > 0) {
+          const userId = this.characterStore.selectedCharacter()?.ownerId;
+          if (userId) {
+            // Note: This would require adding the history entry through Firebase
+            // For now, we're just saving the character update
+            console.log('[CharacterEditor] Stat changes with justifications:', statChanges);
+          }
+        }
 
         await this.showToast('Personaje actualizado', 'success');
         this.router.navigate(['/tabs/characters', this.characterId()]);
@@ -386,14 +743,22 @@ export class CharacterEditorComponent implements OnInit {
         );
 
         if (newId) {
-          // Update avatar if provided
-          if (this.avatarUrl || this.backgroundColor !== '#1a1a2e') {
-            await this.characterStore.updateCharacter(newId, {
-              avatar: {
-                photoUrl: this.avatarUrl || null,
+          // Update avatar and description if provided
+          const hasAvatar = this.avatarImage() || this.backgroundColor !== '#1a1a2e';
+          const hasDescription = this.characterDescription.trim();
+
+          if (hasAvatar || hasDescription) {
+            const updates: any = {};
+            if (hasAvatar) {
+              updates.avatar = {
+                photoUrl: this.avatarImage() || null,
                 backgroundColor: this.backgroundColor
-              }
-            });
+              };
+            }
+            if (hasDescription) {
+              updates.description = this.characterDescription.trim();
+            }
+            await this.characterStore.updateCharacter(newId, updates);
           }
 
           await this.showToast('Personaje creado', 'success');

@@ -1,32 +1,36 @@
 import { Component, Output, EventEmitter, inject, signal, OnInit, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { IonicModule } from '@ionic/angular';
-import { Character, Universe, Race } from '../../../core/models';
+import { IonicModule, ModalController } from '@ionic/angular';
+import { Character, Universe, Race, CharacterSkill } from '../../../core/models';
 import { UniverseStore } from '../../universes/data-access/universe.store';
 import { StatValidationService } from '../../../core/services';
 import { ImageUploadComponent } from '../../../shared';
+import { SkillEditorModalComponent } from '../../characters/ui/skill-editor-modal.component';
+import { SkillIconComponent, SkillIconName } from '../../../shared/ui/skill-icon/skill-icon.component';
 
 @Component({
   selector: 'app-manual-character-form',
   standalone: true,
-  imports: [CommonModule, FormsModule, IonicModule, ImageUploadComponent],
+  imports: [CommonModule, FormsModule, IonicModule, ImageUploadComponent, SkillIconComponent],
   template: `
     <div class="form-container">
       <!-- Step indicator -->
       <div class="step-indicator">
         @for (step of steps; track step.id; let i = $index) {
-          <div
-            class="step"
-            [class.active]="currentStep() === i"
-            [class.completed]="currentStep() > i"
-            (click)="goToStep(i)"
-          >
-            <div class="step-number">{{ i + 1 }}</div>
-            <span class="step-label">{{ step.label }}</span>
-          </div>
-          @if (i < steps.length - 1) {
-            <div class="step-line" [class.completed]="currentStep() > i"></div>
+          @if (isStepVisible(i)) {
+            <div
+              class="step"
+              [class.active]="currentStep() === i"
+              [class.completed]="currentStep() > i"
+              (click)="goToStep(i)"
+            >
+              <div class="step-number">{{ getVisibleStepNumber(i) }}</div>
+              <span class="step-label">{{ step.label }}</span>
+            </div>
+            @if (hasNextVisibleStep(i)) {
+              <div class="step-line" [class.completed]="currentStep() > i"></div>
+            }
           }
         }
       </div>
@@ -353,8 +357,64 @@ import { ImageUploadComponent } from '../../../shared';
             </div>
           }
 
-          <!-- Step 6: Review -->
+          <!-- Step 6: Skills (Optional) -->
           @if (currentStep() === 5) {
+            <div class="form-section">
+              <h2>Habilidades Iniciales</h2>
+              <p class="section-desc">Agrega habilidades, equipos o poderes especiales (opcional)</p>
+
+              @if (initialSkills().length === 0) {
+                <div class="empty-skills">
+                  <ion-icon name="flash-outline" class="empty-icon"></ion-icon>
+                  <p>Aún no has agregado habilidades</p>
+                  <p class="hint">Las habilidades se pueden agregar después de crear el personaje</p>
+                </div>
+              } @else {
+                <div class="skills-list">
+                  @for (skill of initialSkills(); track $index; let i = $index) {
+                    <ion-card class="skill-preview-card">
+                      <ion-card-content>
+                        <div class="skill-header">
+                          <div class="skill-icon">
+                            <app-skill-icon [icon]="$any(skill.icon) || 'sparkle'" [size]="28"></app-skill-icon>
+                          </div>
+                          <div class="skill-info">
+                            <h3>{{ skill.name }}</h3>
+                            @if (skill.subtitle) {
+                              <span class="skill-subtitle">{{ skill.subtitle }}</span>
+                            }
+                          </div>
+                          <ion-chip size="small" [color]="getCategoryColor(skill.category)">
+                            {{ skill.category }}
+                          </ion-chip>
+                        </div>
+                        @if (skill.quote) {
+                          <p class="skill-quote">"{{ skill.quote }}"</p>
+                        }
+                        <p class="skill-desc">{{ skill.description }}</p>
+                        <div class="skill-actions">
+                          <ion-button fill="clear" size="small" (click)="editInitialSkill(i)">
+                            <ion-icon slot="icon-only" name="create"></ion-icon>
+                          </ion-button>
+                          <ion-button fill="clear" size="small" color="danger" (click)="removeInitialSkill(i)">
+                            <ion-icon slot="icon-only" name="trash"></ion-icon>
+                          </ion-button>
+                        </div>
+                      </ion-card-content>
+                    </ion-card>
+                  }
+                </div>
+              }
+
+              <ion-button expand="block" fill="outline" (click)="addInitialSkill()">
+                <ion-icon slot="start" name="add"></ion-icon>
+                Agregar Habilidad
+              </ion-button>
+            </div>
+          }
+
+          <!-- Step 7: Review -->
+          @if (currentStep() === 6) {
             <div class="form-section review-section">
               <h2>Revisión Final</h2>
               <p class="section-desc">Revisa tu personaje antes de crearlo</p>
@@ -419,6 +479,25 @@ import { ImageUploadComponent } from '../../../shared';
                       <div class="traits-list">
                         @for (trait of character.personalityTraits; track trait) {
                           <ion-chip size="small">{{ trait }}</ion-chip>
+                        }
+                      </div>
+                    </div>
+                  }
+
+                  @if (initialSkills().length > 0) {
+                    <div class="preview-skills">
+                      <h4>Habilidades ({{ initialSkills().length }})</h4>
+                      <div class="skills-preview-list">
+                        @for (skill of initialSkills(); track $index) {
+                          <div class="skill-preview-item">
+                            <div class="skill-icon-mini">
+                              <app-skill-icon [icon]="$any(skill.icon) || 'sparkle'" [size]="18"></app-skill-icon>
+                            </div>
+                            <span class="skill-name">{{ skill.name }}</span>
+                            <ion-chip size="small" [color]="getCategoryColor(skill.category)">
+                              {{ skill.category }}
+                            </ion-chip>
+                          </div>
                         }
                       </div>
                     </div>
@@ -1192,6 +1271,146 @@ import { ImageUploadComponent } from '../../../shared';
       border: 2px solid var(--ion-color-secondary);
       border-bottom: none;
     }
+
+    /* Skills step styles */
+    .empty-skills {
+      text-align: center;
+      padding: 40px 20px;
+    }
+
+    .empty-skills .empty-icon {
+      font-size: 64px;
+      color: var(--ion-color-medium);
+      opacity: 0.5;
+    }
+
+    .empty-skills p {
+      margin: 16px 0 4px 0;
+      font-size: 16px;
+    }
+
+    .empty-skills .hint {
+      font-size: 12px;
+      color: var(--ion-color-medium);
+      margin: 0 0 20px 0;
+    }
+
+    .skills-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .skill-preview-card {
+      margin: 0;
+    }
+
+    .skill-header {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+
+    .skill-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      color: var(--ion-color-primary);
+      flex-shrink: 0;
+    }
+
+    .skill-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .skill-info h3 {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .skill-subtitle {
+      font-size: 12px;
+      font-style: italic;
+      color: var(--ion-color-medium);
+    }
+
+    .skill-quote {
+      font-size: 12px;
+      font-style: italic;
+      color: var(--ion-color-primary);
+      margin: 4px 0 8px 0;
+      padding-left: 8px;
+      border-left: 2px solid var(--ion-color-primary);
+    }
+
+    .skill-desc {
+      font-size: 13px;
+      line-height: 1.4;
+      color: var(--ion-color-medium);
+      margin: 0;
+    }
+
+    .skill-actions {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    /* Skills preview in review */
+    .preview-skills {
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .preview-skills h4 {
+      font-size: 14px;
+      color: var(--ion-color-medium);
+      margin: 0 0 8px 0;
+    }
+
+    .skills-preview-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .skill-preview-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 8px;
+    }
+
+    .skill-icon-mini {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 6px;
+      color: var(--ion-color-primary);
+      flex-shrink: 0;
+    }
+
+    .skill-preview-item .skill-name {
+      flex: 1;
+      font-size: 13px;
+      font-weight: 500;
+    }
   `]
 })
 export class ManualCharacterFormComponent implements OnInit {
@@ -1201,11 +1420,13 @@ export class ManualCharacterFormComponent implements OnInit {
 
   private universeStore = inject(UniverseStore);
   private statValidation = inject(StatValidationService);
+  private modalController = inject(ModalController);
 
   currentStep = signal(0);
   selectedUniverse = signal<Universe | null>(null);
   selectedRace = signal<Race | null>(null);
   validationErrors = signal<string[]>([]);
+  initialSkills = signal<Omit<CharacterSkill, 'id'>[]>([]);
 
   universes = this.universeStore.allUniverses;
 
@@ -1217,6 +1438,7 @@ export class ManualCharacterFormComponent implements OnInit {
     { id: 'stats', label: 'Stats' },
     { id: 'rank', label: 'Rango' },
     { id: 'appearance', label: 'Avatar' },
+    { id: 'skills', label: 'Habilidades' },
     { id: 'review', label: 'Revisar' }
   ];
 
@@ -1444,7 +1666,15 @@ export class ManualCharacterFormComponent implements OnInit {
 
   nextStep(): void {
     if (this.canProceed() && this.currentStep() < this.steps.length - 1) {
-      this.currentStep.update(v => v + 1);
+      let nextStepIndex = this.currentStep() + 1;
+
+      // Skip rank step (index 3) if universe doesn't have awakening
+      if (nextStepIndex === 3 && !this.selectedUniverse()?.awakeningSystem?.enabled) {
+        nextStepIndex = 4; // Skip to appearance
+      }
+
+      this.currentStep.set(nextStepIndex);
+
       if (this.currentStep() === this.steps.length - 1) {
         this.validate();
       }
@@ -1453,14 +1683,56 @@ export class ManualCharacterFormComponent implements OnInit {
 
   previousStep(): void {
     if (this.currentStep() > 0) {
-      this.currentStep.update(v => v - 1);
+      let prevStepIndex = this.currentStep() - 1;
+
+      // Skip rank step (index 3) if universe doesn't have awakening
+      if (prevStepIndex === 3 && !this.selectedUniverse()?.awakeningSystem?.enabled) {
+        prevStepIndex = 2; // Skip back to stats
+      }
+
+      this.currentStep.set(prevStepIndex);
     }
   }
 
   goToStep(index: number): void {
+    // Skip rank step if no awakening
+    if (index === 3 && !this.selectedUniverse()?.awakeningSystem?.enabled) {
+      return; // Don't allow navigating to rank step if disabled
+    }
+
     if (index <= this.currentStep() || this.canProceed()) {
       this.currentStep.set(index);
     }
+  }
+
+  // Check if a step should be visible in the indicator
+  isStepVisible(stepIndex: number): boolean {
+    // Rank step (index 3) is only visible if universe has awakening
+    if (stepIndex === 3) {
+      return this.selectedUniverse()?.awakeningSystem?.enabled === true;
+    }
+    return true;
+  }
+
+  // Get the visible step number (accounting for hidden steps)
+  getVisibleStepNumber(stepIndex: number): number {
+    let visibleCount = 0;
+    for (let i = 0; i <= stepIndex; i++) {
+      if (this.isStepVisible(i)) {
+        visibleCount++;
+      }
+    }
+    return visibleCount;
+  }
+
+  // Check if there's another visible step after this one
+  hasNextVisibleStep(stepIndex: number): boolean {
+    for (let i = stepIndex + 1; i < this.steps.length; i++) {
+      if (this.isStepVisible(i)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   canProceed(): boolean {
@@ -1479,7 +1751,9 @@ export class ManualCharacterFormComponent implements OnInit {
         return this.remainingPoints() >= 0;
       case 3:
         return this.character.level >= 1;
-      case 4:
+      case 4: // Appearance
+        return true;
+      case 5: // Skills (optional)
         return true;
       default:
         return true;
@@ -1534,7 +1808,7 @@ export class ManualCharacterFormComponent implements OnInit {
       }
     });
 
-    const characterData: Partial<Character> = {
+    const characterData: Partial<Character> & { initialSkills?: Omit<CharacterSkill, 'id'>[] } = {
       name: this.character.name.trim(),
       universeId: universe.id,
       raceId: race?.id,
@@ -1554,9 +1828,66 @@ export class ManualCharacterFormComponent implements OnInit {
         experience: 0,
         awakening: calculatedAwakening,
         title: this.character.title || undefined
-      }
+      },
+      // Include initial skills if any were added
+      initialSkills: this.initialSkills().length > 0 ? [...this.initialSkills()] : undefined
     };
 
     this.created.emit(characterData);
+  }
+
+  // Skill management methods
+  async addInitialSkill(): Promise<void> {
+    const modal = await this.modalController.create({
+      component: SkillEditorModalComponent,
+      componentProps: {
+        skill: null
+      }
+    });
+
+    await modal.present();
+
+    const { data, role } = await modal.onWillDismiss();
+    if (role === 'save' && data) {
+      this.initialSkills.update(skills => [...skills, data]);
+    }
+  }
+
+  async editInitialSkill(index: number): Promise<void> {
+    const skill = this.initialSkills()[index];
+    const modal = await this.modalController.create({
+      component: SkillEditorModalComponent,
+      componentProps: {
+        skill: { ...skill }
+      }
+    });
+
+    await modal.present();
+
+    const { data, role } = await modal.onWillDismiss();
+    if (role === 'save' && data) {
+      this.initialSkills.update(skills => {
+        const updated = [...skills];
+        updated[index] = data;
+        return updated;
+      });
+    }
+  }
+
+  removeInitialSkill(index: number): void {
+    this.initialSkills.update(skills => skills.filter((_, i) => i !== index));
+  }
+
+  getCategoryColor(category: string): string {
+    const colors: Record<string, string> = {
+      'Pasiva': 'medium',
+      'Activa': 'primary',
+      'Equipo': 'warning',
+      'Magia': 'tertiary',
+      'Combate': 'danger',
+      'Soporte': 'success',
+      'Especial': 'secondary'
+    };
+    return colors[category] || 'medium';
   }
 }

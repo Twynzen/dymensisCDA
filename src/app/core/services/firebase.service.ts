@@ -143,12 +143,20 @@ export class FirebaseService {
   }
 
   async createCharacter(userId: string, character: Omit<Character, 'id'>): Promise<string> {
-    const docRef = await addDoc(this.getCharactersCollection(userId), {
-      ...character,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp()
-    });
-    return docRef.id;
+    try {
+      // Clean undefined values that Firestore doesn't accept
+      const cleanData = JSON.parse(JSON.stringify(character));
+
+      const docRef = await addDoc(this.getCharactersCollection(userId), {
+        ...cleanData,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      });
+      return docRef.id;
+    } catch (error) {
+      console.error('[FirebaseService] createCharacter error:', error);
+      throw error;
+    }
   }
 
   async updateCharacter(userId: string, characterId: string, data: Partial<Character>): Promise<void> {

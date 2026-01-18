@@ -39,6 +39,7 @@ import { PrintableCardComponent } from '../../../shared/ui/printable-card/printa
               [cardUniverseName]="universeName()"
               [cardShareUrl]="shareUrl()"
               [cardMaxStatValue]="200"
+              [showLevel]="universeHasAwakening()"
             ></app-printable-card>
           </div>
         </div>
@@ -206,6 +207,13 @@ export class CharacterShareComponent implements OnInit {
     if (!character) return '';
     const universe = this.universeStore.allUniverses().find(u => u.id === character.universeId);
     return universe?.name ?? '';
+  });
+
+  universeHasAwakening = computed(() => {
+    const character = this.character();
+    if (!character) return false;
+    const universe = this.universeStore.allUniverses().find(u => u.id === character.universeId);
+    return universe?.awakeningSystem?.enabled === true;
   });
 
   ngOnInit(): void {

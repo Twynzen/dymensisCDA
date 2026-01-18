@@ -24,10 +24,9 @@ service cloud.firestore {
     // Sistemas de reglas que pueden ser públicos o privados
 
     match /universes/{universeId} {
-      // Allow read if public OR if user is the creator
-      allow read: if isSignedIn() &&
-                    (resource.data.isPublic == true ||
-                     resource.data.createdBy == request.auth.uid);
+      // Allow read if public (no auth required) OR if user is the creator
+      allow read: if resource.data.isPublic == true ||
+                    (isSignedIn() && resource.data.createdBy == request.auth.uid);
 
       // Allow create if user sets themselves as creator
       allow create: if isSignedIn() &&

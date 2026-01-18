@@ -180,11 +180,14 @@ export const CharacterStore = signalStore(
             }
           }
 
+          console.log('[CharacterStore] Character data to save:', JSON.stringify(character, null, 2));
+
           const characterId = await firebaseService.createCharacter(
             userId,
             character
           );
 
+          console.log('[CharacterStore] Character created with ID:', characterId);
           const newCharacter = { ...character, id: characterId };
           patchState(store, {
             characters: [newCharacter, ...store.characters()],
@@ -193,6 +196,7 @@ export const CharacterStore = signalStore(
 
           return characterId;
         } catch (error) {
+          console.error('[CharacterStore] createCharacter error:', error);
           patchState(store, {
             error: 'Error al crear el personaje',
             loading: false
@@ -306,20 +310,102 @@ export const CharacterStore = signalStore(
         skill: Omit<CharacterSkill, 'id'>
       ): Promise<void> {
         const userId = authService.userId();
-        if (!userId) return;
+        console.log('[CharacterStore] addSkill called:', { characterId, userId, skillName: skill.name });
+
+        if (!userId) {
+          console.error('[CharacterStore] addSkill: No userId - user not authenticated');
+          return;
+        }
 
         try {
+          console.log('[CharacterStore] addSkill: Calling Firebase...');
           const skillId = await firebaseService.addSkill(
             userId,
             characterId,
             skill
           );
-          const newSkill = { ...skill, id: skillId };
+          console.log('[CharacterStore] addSkill: Firebase returned skillId:', skillId);
+
+          const newSkill = { ...skill, id: skillId } as CharacterSkill;
+          const currentSkills = store.selectedCharacterSkills();
+          console.log('[CharacterStore] addSkill: Current skills count:', currentSkills.length);
+
           patchState(store, {
-            selectedCharacterSkills: [newSkill, ...store.selectedCharacterSkills()]
+            selectedCharacterSkills: [newSkill, ...currentSkills]
           });
+
+          console.log('[CharacterStore] addSkill: Updated skills count:', store.selectedCharacterSkills().length);
         } catch (error) {
+          console.error('[CharacterStore] addSkill: Error:', error);
           patchState(store, { error: 'Error al añadir habilidad' });
+        }
+      },
+
+      async updateSkill(
+        characterId: string,
+        skillId: string,
+        updates: Partial<CharacterSkill>
+      ): Promise<void> {
+        const userId = authService.userId();
+        console.log('[CharacterStore] updateSkill called:', { characterId, skillId, userId });
+
+        if (!userId) {
+          console.error('[CharacterStore] updateSkill: No userId');
+          return;
+        }
+
+        try {
+          console.log('[CharacterStore] updateSkill: Calling Firebase...');
+          await firebaseService.updateSkill(userId, characterId, skillId, updates);
+          console.log('[CharacterStore] updateSkill: Firebase update successful');
+
+          // Update local state
+          const currentSkills = store.selectedCharacterSkills();
+          console.log('[CharacterStore] updateSkill: Current skills before update:', currentSkills.length);
+
+          patchState(store, {
+            selectedCharacterSkills: currentSkills.map(skill =>
+              skill.id === skillId ? { ...skill, ...updates } : skill
+            )
+          });
+
+          console.log('[CharacterStore] updateSkill: Skills updated in state');
+        } catch (error) {
+          console.error('[CharacterStore] updateSkill: Error:', error);
+          patchState(store, { error: 'Error al actualizar habilidad' });
+          throw error;
+        }
+      },
+
+      async deleteSkill(
+        characterId: string,
+        skillId: string
+      ): Promise<void> {
+        const userId = authService.userId();
+        console.log('[CharacterStore] deleteSkill called:', { characterId, skillId, userId });
+
+        if (!userId) {
+          console.error('[CharacterStore] deleteSkill: No userId');
+          return;
+        }
+
+        try {
+          console.log('[CharacterStore] deleteSkill: Calling Firebase...');
+          await firebaseService.deleteSkill(userId, characterId, skillId);
+          console.log('[CharacterStore] deleteSkill: Firebase delete successful');
+
+          // Update local state - remove the skill from the list
+          patchState(store, {
+            selectedCharacterSkills: store.selectedCharacterSkills().filter(
+              skill => skill.id !== skillId
+            )
+          });
+
+          console.log('[CharacterStore] deleteSkill: Skill removed from state');
+        } catch (error) {
+          console.error('[CharacterStore] deleteSkill: Error:', error);
+          patchState(store, { error: 'Error al eliminar habilidad' });
+          throw error;
         }
       },
 

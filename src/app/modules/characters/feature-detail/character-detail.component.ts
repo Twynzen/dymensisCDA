@@ -7,12 +7,15 @@ import { CharacterStore } from '../data-access/character.store';
 import { UniverseStore } from '../../universes/data-access/universe.store';
 import { StatBarComponent } from '../../../shared/ui/stat-bar/stat-bar.component';
 import { StatsRadarComponent } from '../../../shared/ui/radar-chart/stats-radar.component';
+import { SkillEditorModalComponent } from '../ui/skill-editor-modal.component';
 import { fadeInAnimation, statChangeAnimation } from '../../../shared/animations/stat-animations';
+import { CharacterSkill } from '../../../core/models';
+import { SkillIconComponent, SkillIconName } from '../../../shared/ui/skill-icon/skill-icon.component';
 
 @Component({
   selector: 'app-character-detail',
   standalone: true,
-  imports: [CommonModule, FormsModule, IonicModule, StatBarComponent, StatsRadarComponent],
+  imports: [CommonModule, FormsModule, IonicModule, StatBarComponent, StatsRadarComponent, SkillIconComponent],
   animations: [fadeInAnimation, statChangeAnimation],
   template: `
     <ion-header>
@@ -47,22 +50,35 @@ import { fadeInAnimation, statChangeAnimation } from '../../../shared/animations
                 <ion-icon name="person-outline"></ion-icon>
               </div>
             }
-            <div class="awakening-badge" [class]="'rank-' + character()!.progression.awakening">
-              {{ character()!.progression.awakening }}
-            </div>
+            <!-- Only show awakening badge if universe has awakening enabled -->
+            @if (universeHasAwakening()) {
+              <div class="awakening-badge" [class]="'rank-' + character()!.progression.awakening">
+                {{ character()!.progression.awakening }}
+              </div>
+            }
           </div>
 
           <div class="character-info">
             <h1>{{ character()!.name }}</h1>
-            <div class="level-section">
-              <ion-icon name="star" color="warning"></ion-icon>
-              <span>Nivel {{ character()!.progression.level }}</span>
-            </div>
+            <!-- Only show level if universe has awakening enabled -->
+            @if (universeHasAwakening()) {
+              <div class="level-section">
+                <ion-icon name="star" color="warning"></ion-icon>
+                <span>Nivel {{ character()!.progression.level }}</span>
+              </div>
+            }
             @if (character()!.progression.title) {
               <span class="title">{{ character()!.progression.title }}</span>
             }
           </div>
         </div>
+
+        <!-- Character Description (not shown in shareable card) -->
+        @if (character()!.description) {
+          <div class="description-section">
+            <p>{{ character()!.description }}</p>
+          </div>
+        }
 
         <ion-segment [(ngModel)]="viewMode" class="view-segment">
           <ion-segment-button value="stats">
@@ -120,18 +136,56 @@ import { fadeInAnimation, statChangeAnimation } from '../../../shared/animations
                   </ion-button>
                 </div>
               } @else {
-                <ion-list>
-                  @for (skill of characterStore.selectedCharacterSkills(); track skill.id) {
-                    <ion-item>
-                      <ion-icon [name]="skill.icon || 'flash'" slot="start" color="primary"></ion-icon>
-                      <ion-label>
-                        <h2>{{ skill.name }}</h2>
-                        <p>{{ skill.description }}</p>
-                      </ion-label>
-                      <ion-badge slot="end">Nv. {{ skill.level }}</ion-badge>
-                    </ion-item>
-                  }
-                </ion-list>
+                @for (skill of characterStore.selectedCharacterSkills(); track skill.id) {
+                  <div class="skill-card" (click)="viewSkill(skill)">
+                    <div class="skill-header">
+                      <div class="skill-icon">
+                        <app-skill-icon [icon]="$any(skill.icon) || 'sparkle'" [size]="32"></app-skill-icon>
+                      </div>
+                      <div class="skill-titles">
+                        <h3>{{ skill.name }}</h3>
+                        @if (skill.subtitle) {
+                          <span class="skill-subtitle">"{{ skill.subtitle }}"</span>
+                        }
+                      </div>
+                      <ion-badge [color]="getCategoryColor(skill.category)">
+                        {{ skill.category }}
+                      </ion-badge>
+                    </div>
+
+                    @if (skill.quote) {
+                      <p class="skill-quote">"{{ skill.quote }}"</p>
+                    }
+
+                    <p class="skill-description">
+                      {{ skill.description.length > 150 ? (skill.description | slice:0:150) + '...' : skill.description }}
+                    </p>
+
+                    @if (skill.effects && skill.effects.length > 0) {
+                      <div class="skill-effects">
+                        @for (effect of skill.effects.slice(0, 2); track $index) {
+                          @if (effect.description) {
+                            <span class="effect-badge">
+                              <ion-icon name="checkmark-circle"></ion-icon>
+                              {{ effect.description.length > 50 ? (effect.description | slice:0:50) + '...' : effect.description }}
+                            </span>
+                          }
+                        }
+                        @if (skill.effects.length > 2) {
+                          <span class="more-effects">+{{ skill.effects.length - 2 }} más</span>
+                        }
+                      </div>
+                    }
+
+                    @if (skill.limitations && skill.limitations.length > 0) {
+                      <div class="skill-limitations">
+                        <ion-icon name="warning" color="warning"></ion-icon>
+                        <span>{{ skill.limitations.length }} limitación{{ skill.limitations.length > 1 ? 'es' : '' }}</span>
+                      </div>
+                    }
+                  </div>
+                }
+
                 <ion-button expand="block" fill="outline" (click)="addSkill()">
                   <ion-icon slot="start" name="add"></ion-icon>
                   Añadir Habilidad
@@ -155,11 +209,14 @@ import { fadeInAnimation, statChangeAnimation } from '../../../shared/animations
                         <h3>{{ entry.action }}</h3>
                         <p>
                           @for (change of entry.appliedChanges; track change.stat) {
-                            <span class="change-badge positive">
-                              {{ change.stat }}: +{{ change.change }}
+                            <span class="change-badge" [class.positive]="change.change > 0" [class.negative]="change.change < 0">
+                              {{ change.stat }}: {{ change.change > 0 ? '+' : '' }}{{ change.change }}
                             </span>
                           }
                         </p>
+                        @if (entry.appliedChanges[0]?.reason) {
+                          <p class="change-reason">{{ entry.appliedChanges[0].reason }}</p>
+                        }
                       </ion-label>
                       <ion-note slot="end">
                         {{ entry.timestamp | date:'short' }}
@@ -271,6 +328,21 @@ import { fadeInAnimation, statChangeAnimation } from '../../../shared/animations
       margin-top: 4px;
     }
 
+    .description-section {
+      padding: 12px 16px;
+      background: rgba(255, 255, 255, 0.03);
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .description-section p {
+      margin: 0;
+      font-size: 14px;
+      line-height: 1.5;
+      opacity: 0.85;
+      font-style: italic;
+    }
+
     .view-segment {
       margin: 16px;
     }
@@ -326,6 +398,117 @@ import { fadeInAnimation, statChangeAnimation } from '../../../shared/animations
       margin-bottom: 16px;
     }
 
+    /* Skill Cards */
+    .skill-card {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 12px;
+      cursor: pointer;
+      transition: transform 0.2s, background 0.2s;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .skill-card:hover {
+      transform: translateY(-2px);
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .skill-header {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+
+    .skill-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 44px;
+      height: 44px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      color: var(--ion-color-primary);
+      flex-shrink: 0;
+    }
+
+    .skill-titles {
+      flex: 1;
+    }
+
+    .skill-titles h3 {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .skill-subtitle {
+      font-size: 12px;
+      opacity: 0.6;
+      font-style: italic;
+      display: block;
+      margin-top: 2px;
+    }
+
+    .skill-quote {
+      font-size: 13px;
+      font-style: italic;
+      opacity: 0.7;
+      margin: 8px 0;
+      padding-left: 12px;
+      border-left: 2px solid var(--ion-color-primary);
+    }
+
+    .skill-description {
+      font-size: 14px;
+      opacity: 0.8;
+      margin: 8px 0;
+      line-height: 1.4;
+    }
+
+    .skill-effects {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .effect-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      padding: 4px 8px;
+      background: rgba(var(--ion-color-success-rgb), 0.2);
+      color: var(--ion-color-success);
+      border-radius: 4px;
+    }
+
+    .effect-badge ion-icon {
+      font-size: 12px;
+    }
+
+    .more-effects {
+      font-size: 11px;
+      opacity: 0.5;
+      padding: 4px 8px;
+    }
+
+    .skill-limitations {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 8px;
+      font-size: 12px;
+      opacity: 0.7;
+    }
+
+    .skill-limitations ion-icon {
+      font-size: 14px;
+    }
+
+    /* History */
     .change-badge {
       display: inline-block;
       padding: 2px 6px;
@@ -339,6 +522,18 @@ import { fadeInAnimation, statChangeAnimation } from '../../../shared/animations
       color: #4CAF50;
     }
 
+    .change-badge.negative {
+      background: rgba(244, 67, 54, 0.2);
+      color: #F44336;
+    }
+
+    .change-reason {
+      font-size: 12px;
+      font-style: italic;
+      opacity: 0.6;
+      margin-top: 4px;
+    }
+
     ion-fab-button {
       --background: linear-gradient(135deg, #667eea, #764ba2);
     }
@@ -349,11 +544,19 @@ export class CharacterDetailComponent implements OnInit {
   universeStore = inject(UniverseStore);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
+  private modalController = inject(ModalController);
   private toastController = inject(ToastController);
 
   viewMode = signal<'stats' | 'radar' | 'skills' | 'history'>('stats');
 
   character = computed(() => this.characterStore.selectedCharacter());
+
+  universeHasAwakening = computed(() => {
+    const character = this.character();
+    if (!character) return false;
+    const universe = this.universeStore.allUniverses().find(u => u.id === character.universeId);
+    return universe?.awakeningSystem?.enabled === true;
+  });
 
   sortedStats = computed(() => {
     const character = this.character();
@@ -379,6 +582,11 @@ export class CharacterDetailComponent implements OnInit {
     const characterId = this.route.snapshot.paramMap.get('id');
     if (characterId) {
       this.characterStore.selectCharacter(characterId);
+    }
+
+    // Load universes if needed
+    if (this.universeStore.allUniverses().length === 0) {
+      this.universeStore.loadUniverses();
     }
   }
 
@@ -413,6 +621,19 @@ export class CharacterDetailComponent implements OnInit {
     return universe?.statDefinitions[key]?.color ?? '#4CAF50';
   }
 
+  getCategoryColor(category: string): string {
+    const colors: Record<string, string> = {
+      'Pasiva': 'medium',
+      'Activa': 'primary',
+      'Equipo': 'tertiary',
+      'Magia': 'secondary',
+      'Combate': 'danger',
+      'Soporte': 'success',
+      'Especial': 'warning'
+    };
+    return colors[category] || 'medium';
+  }
+
   editCharacter(): void {
     const character = this.character();
     if (character?.id) {
@@ -432,11 +653,109 @@ export class CharacterDetailComponent implements OnInit {
   }
 
   async addSkill(): Promise<void> {
-    const toast = await this.toastController.create({
-      message: 'Función de añadir habilidad próximamente',
-      duration: 2000,
-      position: 'bottom'
+    console.log('[CharacterDetail] addSkill: Opening modal');
+    const modal = await this.modalController.create({
+      component: SkillEditorModalComponent
     });
-    await toast.present();
+
+    await modal.present();
+    const { data, role } = await modal.onDidDismiss();
+    console.log('[CharacterDetail] addSkill: Modal dismissed with role:', role, 'data:', data?.name);
+
+    if (role === 'save' && data) {
+      const character = this.character();
+      console.log('[CharacterDetail] addSkill: Character id:', character?.id);
+      if (character?.id) {
+        try {
+          console.log('[CharacterDetail] addSkill: Calling store.addSkill...');
+          await this.characterStore.addSkill(character.id, {
+            ...data,
+            level: 1,
+            acquiredAt: new Date()
+          } as CharacterSkill);
+          console.log('[CharacterDetail] addSkill: Store updated. Skills count:', this.characterStore.selectedCharacterSkills().length);
+
+          const toast = await this.toastController.create({
+            message: 'Habilidad añadida',
+            duration: 2000,
+            color: 'success',
+            position: 'bottom'
+          });
+          await toast.present();
+        } catch (error) {
+          console.error('[CharacterDetail] addSkill: Error:', error);
+          const toast = await this.toastController.create({
+            message: 'Error al añadir habilidad',
+            duration: 2000,
+            color: 'danger',
+            position: 'bottom'
+          });
+          await toast.present();
+        }
+      }
+    } else {
+      console.log('[CharacterDetail] addSkill: Modal dismissed without saving');
+    }
+  }
+
+  async viewSkill(skill: CharacterSkill): Promise<void> {
+    const modal = await this.modalController.create({
+      component: SkillEditorModalComponent,
+      componentProps: {
+        skill,
+        isEditing: true
+      }
+    });
+
+    await modal.present();
+    const { data, role } = await modal.onDidDismiss();
+
+    const character = this.character();
+
+    if (role === 'save' && data) {
+      if (character?.id && skill.id) {
+        try {
+          await this.characterStore.updateSkill(character.id, skill.id, data);
+
+          const toast = await this.toastController.create({
+            message: 'Habilidad actualizada',
+            duration: 2000,
+            color: 'success',
+            position: 'bottom'
+          });
+          await toast.present();
+        } catch (error) {
+          const toast = await this.toastController.create({
+            message: 'Error al actualizar habilidad',
+            duration: 2000,
+            color: 'danger',
+            position: 'bottom'
+          });
+          await toast.present();
+        }
+      }
+    } else if (role === 'delete' && data?.skillId) {
+      if (character?.id) {
+        try {
+          await this.characterStore.deleteSkill(character.id, data.skillId);
+
+          const toast = await this.toastController.create({
+            message: 'Habilidad eliminada',
+            duration: 2000,
+            color: 'success',
+            position: 'bottom'
+          });
+          await toast.present();
+        } catch (error) {
+          const toast = await this.toastController.create({
+            message: 'Error al eliminar habilidad',
+            duration: 2000,
+            color: 'danger',
+            position: 'bottom'
+          });
+          await toast.present();
+        }
+      }
+    }
   }
 }

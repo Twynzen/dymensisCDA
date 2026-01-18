@@ -16,7 +16,7 @@ import { WebLLMService } from '../../../core/services/webllm.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { UniverseStore } from '../../universes/data-access/universe.store';
 import { CharacterStore } from '../../characters/data-access/character.store';
-import { Universe, Character } from '../../../core/models';
+import { Universe, Character, CharacterSkill } from '../../../core/models';
 
 export type CreationMode = 'idle' | 'universe' | 'character' | 'action';
 export type CreationApproach = 'manual' | 'ai';
@@ -149,7 +149,7 @@ export type CreationApproach = 'manual' | 'ai';
                 <h2>Nuevo Personaje</h2>
                 <p>Crea un personaje con trasfondo, stats y habilidades únicas</p>
                 <div class="phase-count">
-                  {{ selectedApproach === 'manual' ? '6 pasos' : '7 fases guiadas' }}
+                  {{ selectedApproach === 'manual' ? '7 pasos' : '7 fases guiadas' }}
                 </div>
               </ion-card-content>
             </ion-card>
@@ -634,7 +634,7 @@ export class CreationHubComponent implements OnInit, AfterViewChecked {
     }
   }
 
-  async onCharacterCreated(characterData: Partial<Character>): Promise<void> {
+  async onCharacterCreated(characterData: Partial<Character> & { initialSkills?: Omit<CharacterSkill, 'id'>[] }): Promise<void> {
     try {
       console.log('Creating character:', characterData.name);
 
@@ -642,9 +642,12 @@ export class CreationHubComponent implements OnInit, AfterViewChecked {
         throw new Error('Missing required character data');
       }
 
+      // Extract initialSkills before passing to store (not part of Character model)
+      const { initialSkills, ...characterDataWithoutSkills } = characterData;
+
       // Pass the complete character data to the store
       // This includes: raceId, baseStats, bonusStats, derivedStats, awakening (calculated), etc.
-      const characterId = await this.characterStore.createCharacter(characterData);
+      const characterId = await this.characterStore.createCharacter(characterDataWithoutSkills);
 
       if (!characterId) {
         console.error('Failed to create character - no characterId returned. User may not be authenticated.');
@@ -655,8 +658,24 @@ export class CreationHubComponent implements OnInit, AfterViewChecked {
       }
 
       console.log('Character created with ID:', characterId);
+
+      // Add initial skills if any were provided
+      if (initialSkills && initialSkills.length > 0) {
+        console.log(`Adding ${initialSkills.length} initial skills...`);
+        for (const skill of initialSkills) {
+          try {
+            await this.characterStore.addSkill(characterId, skill);
+            console.log(`Added skill: ${skill.name}`);
+          } catch (skillError) {
+            console.error(`Error adding skill ${skill.name}:`, skillError);
+            // Continue with other skills even if one fails
+          }
+        }
+      }
+
       this.toastColor.set('success');
-      this.successMessage.set(`¡${characterData.name} creado exitosamente!`);
+      const skillsMsg = initialSkills?.length ? ` con ${initialSkills.length} habilidad${initialSkills.length > 1 ? 'es' : ''}` : '';
+      this.successMessage.set(`¡${characterData.name} creado exitosamente${skillsMsg}!`);
       this.showSuccessToast.set(true);
       this.resetToIdle();
     } catch (error) {

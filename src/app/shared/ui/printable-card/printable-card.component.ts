@@ -24,12 +24,14 @@ import { Character, StatDefinition } from '../../../core/models';
         }
         <div class="info">
           <h1 class="name">{{ characterName() }}</h1>
-          <div class="meta">
-            <span class="level">Nivel {{ level() }}</span>
-            <span class="awakening" [class]="'rank-' + awakening()">
-              Rango {{ awakening() }}
-            </span>
-          </div>
+          @if (showLevelDisplay()) {
+            <div class="meta">
+              <span class="level">Nivel {{ level() }}</span>
+              <span class="awakening" [class]="'rank-' + awakening()">
+                Rango {{ awakening() }}
+              </span>
+            </div>
+          }
           @if (title()) {
             <span class="title">{{ title() }}</span>
           }
@@ -234,6 +236,7 @@ export class PrintableCardComponent {
   private _universeName = signal('');
   private _shareUrl = signal('');
   private _maxStatValue = signal(200);
+  private _showLevel = signal(true);
 
   characterName = computed(() => this._character()?.name ?? '');
   avatarUrl = computed(() => this._character()?.avatar?.photoUrl ?? '');
@@ -244,6 +247,7 @@ export class PrintableCardComponent {
   universeName = computed(() => this._universeName());
   shareUrl = computed(() => this._shareUrl());
   maxStatValue = computed(() => this._maxStatValue());
+  showLevelDisplay = computed(() => this._showLevel());
 
   initials = computed(() => {
     const name = this.characterName();
@@ -296,6 +300,10 @@ export class PrintableCardComponent {
 
   @Input() set cardMaxStatValue(value: number) {
     this._maxStatValue.set(value);
+  }
+
+  @Input() set showLevel(value: boolean) {
+    this._showLevel.set(value);
   }
 
   async captureAsImage(): Promise<string> {

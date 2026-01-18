@@ -37,16 +37,33 @@ export interface Character {
   personalityTraits?: string[];
 }
 
+export interface SkillEffect {
+  description: string;
+  mechanicValue?: string; // Ej: "+1 de daño", "2 turnos", "15 metros"
+}
+
 export interface CharacterSkill {
   id?: string;
-  name: string;
-  description: string;
+  // Identidad
+  name: string;              // Ej: "Monóculo de Escaneo Analógico K-1"
+  subtitle?: string;         // Ej: "El Ojo del Ingeniero"
+  icon?: string;             // Emoji o nombre de ion-icon
+  quote?: string;            // Ej: "Todo tiene un punto débil..."
+
+  // Contenido
+  description: string;       // Descripción detallada
+  effects?: SkillEffect[];   // Lista de efectos
+  limitations?: string[];    // Limitaciones
+
+  // Metadata
+  category: string;          // Ej: "Equipo", "Magia", "Pasiva", "Activa"
   level: number;
   acquiredAt: Date;
-  category: string;
-  cooldown?: number;
-  manaCost?: number;
-  icon?: string;
+
+  // Opcionales para sistemas de combate
+  cooldown?: number;         // Tiempo de recarga en turnos
+  manaCost?: number;         // Costo de maná/energía
+  usesPerDay?: number;       // Usos por día
 }
 
 export interface StatChange {
