@@ -198,7 +198,7 @@ type AuthMode = 'login' | 'register';
       max-width: 420px;
       margin: 0 auto;
       padding: 20px;
-      min-height: 100%;
+      min-height: 100vh;
       display: flex;
       flex-direction: column;
     }

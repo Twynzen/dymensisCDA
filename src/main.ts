@@ -1,4 +1,5 @@
 import { bootstrapApplication } from '@angular/platform-browser';
+import { defineCustomElements } from '@ionic/core/loader';
 import { addIcons } from 'ionicons';
 import {
   // Stats icons
@@ -157,6 +158,9 @@ addIcons({
   'camera': camera,
   'trash': trash
 });
+
+// Register Ionic Web Components for production builds
+defineCustomElements(window);
 
 bootstrapApplication(AppComponent, appConfig)
   .catch((err) => console.error(err));

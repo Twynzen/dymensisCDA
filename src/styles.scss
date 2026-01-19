@@ -163,6 +163,11 @@ body {
 /* Ion Content - Base background */
 ion-content {
   --background: var(--qdt-bg-primary);
+  --overflow: auto;
+
+  &::part(scroll) {
+    overflow-y: auto !important;
+  }
 }
 
 /* Ion Header & Toolbar */
@@ -666,6 +671,15 @@ ion-modal {
 /* ============================================
    QDT VHS EFFECTS
    ============================================ */
+
+/* QDT Effects Component - Global styles for production build */
+app-qdt-effects {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9990;
+  display: block;
+}
 
 /* Scanlines Overlay */
 .qdt-scanlines {

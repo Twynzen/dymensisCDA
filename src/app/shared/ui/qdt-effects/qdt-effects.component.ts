@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, signal } from '@angular/core';
+import { Component, OnInit, OnDestroy, signal, ViewEncapsulation } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 /**
@@ -13,6 +13,7 @@ import { CommonModule } from '@angular/common';
   selector: 'app-qdt-effects',
   standalone: true,
   imports: [CommonModule],
+  encapsulation: ViewEncapsulation.None,
   template: `
     <!-- Scanlines -->
     <div class="qdt-scanlines"></div>
@@ -26,11 +27,12 @@ import { CommonModule } from '@angular/common';
     }
   `,
   styles: [`
-    :host {
+    app-qdt-effects {
       position: fixed;
       inset: 0;
       pointer-events: none;
       z-index: 9990;
+      display: block;
     }
   `]
 })
