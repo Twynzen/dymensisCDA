@@ -12,201 +12,1299 @@
 @import '@ionic/angular/css/text-transformation.css';
 @import '@ionic/angular/css/flex-utils.css';
 
-/* RPG Character Manager Theme */
+/* ============================================
+   QDT DESIGN SYSTEM - VHS Surveillance Style
+   ============================================ */
+
+/* QDT Color Palette - Zinc-based dark theme */
 :root {
-  /* Primary Color Palette */
-  --ion-color-primary: #667eea;
-  --ion-color-primary-rgb: 102, 126, 234;
+  /* === QDT CORE COLORS === */
+  --qdt-bg-primary: #09090b;      /* zinc-950 */
+  --qdt-bg-secondary: #18181b;    /* zinc-900 */
+  --qdt-bg-tertiary: #27272a;     /* zinc-800 */
+  --qdt-bg-elevated: #3f3f46;     /* zinc-700 */
+
+  --qdt-border-subtle: #27272a;   /* zinc-800 */
+  --qdt-border-default: #3f3f46;  /* zinc-700 */
+  --qdt-border-strong: #52525b;   /* zinc-600 */
+  --qdt-border-focus: #71717a;    /* zinc-500 */
+
+  --qdt-text-primary: #e4e4e7;    /* zinc-200 */
+  --qdt-text-secondary: #a1a1aa;  /* zinc-400 */
+  --qdt-text-muted: #71717a;      /* zinc-500 */
+  --qdt-text-subtle: #52525b;     /* zinc-600 */
+  --qdt-text-disabled: #3f3f46;   /* zinc-700 */
+
+  /* === QDT ACCENT COLORS === */
+  --qdt-accent-red: #dc2626;      /* red-600 - REC/alerts */
+  --qdt-accent-red-dim: #991b1b;  /* red-800 */
+  --qdt-accent-amber: #d97706;    /* amber-600 - warnings */
+  --qdt-accent-amber-dim: #92400e; /* amber-800 */
+  --qdt-accent-green: #16a34a;    /* green-600 - connected */
+  --qdt-accent-green-dim: #166534; /* green-800 */
+  --qdt-accent-cyan: #06b6d4;     /* cyan-500 - glitch */
+  --qdt-accent-cyan-dim: #0e7490; /* cyan-700 */
+
+  /* === QDT TYPOGRAPHY === */
+  --qdt-font-mono: 'SF Mono', SFMono-Regular, ui-monospace, 'DejaVu Sans Mono', Menlo, Consolas, monospace;
+  --qdt-tracking-tight: -0.025em;
+  --qdt-tracking-normal: 0;
+  --qdt-tracking-wide: 0.025em;
+  --qdt-tracking-wider: 0.05em;
+  --qdt-tracking-widest: 0.1em;
+  --qdt-tracking-ultra: 0.2em;
+
+  /* === QDT EFFECTS === */
+  --qdt-scanline-opacity: 0.03;
+  --qdt-vignette-opacity: 0.4;
+  --qdt-glow-red: 0 0 10px rgba(220, 38, 38, 0.5);
+  --qdt-glow-amber: 0 0 10px rgba(217, 119, 6, 0.5);
+  --qdt-glow-green: 0 0 10px rgba(22, 163, 74, 0.5);
+  --qdt-glow-cyan: 0 0 10px rgba(6, 182, 212, 0.5);
+
+  /* === IONIC COLOR OVERRIDES === */
+  --ion-color-primary: #71717a;
+  --ion-color-primary-rgb: 113, 113, 122;
   --ion-color-primary-contrast: #ffffff;
   --ion-color-primary-contrast-rgb: 255, 255, 255;
-  --ion-color-primary-shade: #5a6fce;
-  --ion-color-primary-tint: #758bec;
+  --ion-color-primary-shade: #52525b;
+  --ion-color-primary-tint: #a1a1aa;
 
-  --ion-color-secondary: #764ba2;
-  --ion-color-secondary-rgb: 118, 75, 162;
+  --ion-color-secondary: #3f3f46;
+  --ion-color-secondary-rgb: 63, 63, 70;
   --ion-color-secondary-contrast: #ffffff;
   --ion-color-secondary-contrast-rgb: 255, 255, 255;
-  --ion-color-secondary-shade: #68428f;
-  --ion-color-secondary-tint: #845dab;
+  --ion-color-secondary-shade: #27272a;
+  --ion-color-secondary-tint: #52525b;
 
-  --ion-color-tertiary: #00bcd4;
-  --ion-color-tertiary-rgb: 0, 188, 212;
+  --ion-color-tertiary: #06b6d4;
+  --ion-color-tertiary-rgb: 6, 182, 212;
   --ion-color-tertiary-contrast: #000000;
   --ion-color-tertiary-contrast-rgb: 0, 0, 0;
-  --ion-color-tertiary-shade: #00a6bb;
-  --ion-color-tertiary-tint: #1ac3d8;
+  --ion-color-tertiary-shade: #0e7490;
+  --ion-color-tertiary-tint: #22d3ee;
 
-  --ion-color-success: #4CAF50;
-  --ion-color-success-rgb: 76, 175, 80;
+  --ion-color-success: #16a34a;
+  --ion-color-success-rgb: 22, 163, 74;
   --ion-color-success-contrast: #ffffff;
   --ion-color-success-contrast-rgb: 255, 255, 255;
-  --ion-color-success-shade: #439a46;
-  --ion-color-success-tint: #5eb762;
+  --ion-color-success-shade: #166534;
+  --ion-color-success-tint: #22c55e;
 
-  --ion-color-warning: #ffc107;
-  --ion-color-warning-rgb: 255, 193, 7;
+  --ion-color-warning: #d97706;
+  --ion-color-warning-rgb: 217, 119, 6;
   --ion-color-warning-contrast: #000000;
   --ion-color-warning-contrast-rgb: 0, 0, 0;
-  --ion-color-warning-shade: #e0aa06;
-  --ion-color-warning-tint: #ffc720;
+  --ion-color-warning-shade: #92400e;
+  --ion-color-warning-tint: #f59e0b;
 
-  --ion-color-danger: #F44336;
-  --ion-color-danger-rgb: 244, 67, 54;
+  --ion-color-danger: #dc2626;
+  --ion-color-danger-rgb: 220, 38, 38;
   --ion-color-danger-contrast: #ffffff;
   --ion-color-danger-contrast-rgb: 255, 255, 255;
-  --ion-color-danger-shade: #d73b30;
-  --ion-color-danger-tint: #f5564a;
+  --ion-color-danger-shade: #991b1b;
+  --ion-color-danger-tint: #ef4444;
 
-  --ion-color-medium: #92949c;
-  --ion-color-medium-rgb: 146, 148, 156;
-  --ion-color-medium-contrast: #000000;
-  --ion-color-medium-contrast-rgb: 0, 0, 0;
-  --ion-color-medium-shade: #808289;
-  --ion-color-medium-tint: #9d9fa6;
+  --ion-color-medium: #52525b;
+  --ion-color-medium-rgb: 82, 82, 91;
+  --ion-color-medium-contrast: #ffffff;
+  --ion-color-medium-contrast-rgb: 255, 255, 255;
+  --ion-color-medium-shade: #3f3f46;
+  --ion-color-medium-tint: #71717a;
 
-  --ion-color-light: #f4f5f8;
-  --ion-color-light-rgb: 244, 245, 248;
-  --ion-color-light-contrast: #000000;
-  --ion-color-light-contrast-rgb: 0, 0, 0;
-  --ion-color-light-shade: #d7d8da;
-  --ion-color-light-tint: #f5f6f9;
+  --ion-color-light: #27272a;
+  --ion-color-light-rgb: 39, 39, 42;
+  --ion-color-light-contrast: #ffffff;
+  --ion-color-light-contrast-rgb: 255, 255, 255;
+  --ion-color-light-shade: #18181b;
+  --ion-color-light-tint: #3f3f46;
 }
 
-/* Dark Theme - Default */
+/* QDT Dark Theme - Default */
 body {
-  --ion-background-color: #1a1a2e;
-  --ion-background-color-rgb: 26, 26, 46;
-  --ion-text-color: #ffffff;
-  --ion-text-color-rgb: 255, 255, 255;
+  --ion-background-color: var(--qdt-bg-primary);
+  --ion-background-color-rgb: 9, 9, 11;
+  --ion-text-color: var(--qdt-text-primary);
+  --ion-text-color-rgb: 228, 228, 231;
 
-  --ion-color-step-50: #1e1e33;
-  --ion-color-step-100: #222238;
-  --ion-color-step-150: #26263d;
-  --ion-color-step-200: #2a2a42;
-  --ion-color-step-250: #2e2e47;
-  --ion-color-step-300: #32324c;
-  --ion-color-step-350: #363651;
-  --ion-color-step-400: #3a3a56;
-  --ion-color-step-450: #3e3e5b;
-  --ion-color-step-500: #424260;
-  --ion-color-step-550: #464665;
-  --ion-color-step-600: #4a4a6a;
-  --ion-color-step-650: #4e4e6f;
-  --ion-color-step-700: #525274;
-  --ion-color-step-750: #565679;
-  --ion-color-step-800: #5a5a7e;
-  --ion-color-step-850: #5e5e83;
-  --ion-color-step-900: #626288;
-  --ion-color-step-950: #66668d;
+  --ion-color-step-50: #0f0f11;
+  --ion-color-step-100: #18181b;
+  --ion-color-step-150: #1f1f23;
+  --ion-color-step-200: #27272a;
+  --ion-color-step-250: #2e2e32;
+  --ion-color-step-300: #3f3f46;
+  --ion-color-step-350: #47474e;
+  --ion-color-step-400: #52525b;
+  --ion-color-step-450: #5a5a63;
+  --ion-color-step-500: #71717a;
+  --ion-color-step-550: #7a7a82;
+  --ion-color-step-600: #a1a1aa;
+  --ion-color-step-650: #a9a9b1;
+  --ion-color-step-700: #d4d4d8;
+  --ion-color-step-750: #dcdce0;
+  --ion-color-step-800: #e4e4e7;
+  --ion-color-step-850: #ececee;
+  --ion-color-step-900: #f4f4f5;
+  --ion-color-step-950: #fafafa;
 
-  --ion-card-background: #1e1e33;
+  --ion-card-background: var(--qdt-bg-secondary);
   --ion-item-background: transparent;
-  --ion-toolbar-background: #1a1a2e;
-  --ion-tab-bar-background: rgba(26, 26, 46, 0.95);
+  --ion-toolbar-background: var(--qdt-bg-primary);
+  --ion-tab-bar-background: rgba(9, 9, 11, 0.95);
+
+  font-family: var(--qdt-font-mono);
+  background-color: var(--qdt-bg-primary);
 }
 
-/* Global Styles */
+/* ============================================
+   QDT GLOBAL COMPONENT STYLES
+   ============================================ */
+
+/* Ion Content - Base background */
 ion-content {
-  --background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
+  --background: var(--qdt-bg-primary);
+}
+
+/* Ion Header & Toolbar */
+ion-header {
+  ion-toolbar {
+    --background: var(--qdt-bg-primary);
+    --border-width: 0 0 1px 0;
+    --border-color: var(--qdt-border-subtle);
+  }
 }
 
 ion-toolbar {
+  --background: var(--qdt-bg-primary);
   --border-width: 0 0 1px 0;
-  --border-color: rgba(255, 255, 255, 0.1);
+  --border-color: var(--qdt-border-subtle);
+
+  ion-title {
+    font-family: var(--qdt-font-mono);
+    font-size: 12px;
+    letter-spacing: var(--qdt-tracking-widest);
+    text-transform: uppercase;
+    color: var(--qdt-text-secondary);
+  }
+
+  ion-back-button {
+    --color: var(--qdt-text-muted);
+  }
 }
 
+/* Ion Card - QDT Panel Style */
 ion-card {
-  --background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 16px;
+  --background: var(--qdt-bg-secondary);
+  background: var(--qdt-bg-secondary);
+  border: 1px solid var(--qdt-border-subtle);
+  border-radius: 0;
+  margin: 8px;
+  box-shadow: none;
+
+  ion-card-header {
+    padding: 12px 16px 8px;
+
+    ion-card-title {
+      font-family: var(--qdt-font-mono);
+      font-size: 14px;
+      font-weight: 400;
+      letter-spacing: var(--qdt-tracking-wider);
+      text-transform: uppercase;
+      color: var(--qdt-text-primary);
+    }
+
+    ion-card-subtitle {
+      font-family: var(--qdt-font-mono);
+      font-size: 10px;
+      letter-spacing: var(--qdt-tracking-widest);
+      text-transform: uppercase;
+      color: var(--qdt-text-muted);
+    }
+  }
+
+  ion-card-content {
+    padding: 12px 16px 16px;
+    font-size: 13px;
+    color: var(--qdt-text-secondary);
+  }
 }
 
+/* Ion Item - QDT Style */
 ion-item {
-  --border-color: rgba(255, 255, 255, 0.1);
+  --background: transparent;
+  --border-color: var(--qdt-border-subtle);
+  --padding-start: 16px;
+  --padding-end: 16px;
+  --inner-padding-end: 0;
+  font-family: var(--qdt-font-mono);
+
+  ion-label {
+    font-size: 13px;
+    letter-spacing: var(--qdt-tracking-wide);
+
+    h2 {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--qdt-text-primary);
+    }
+
+    p {
+      font-size: 12px;
+      color: var(--qdt-text-muted);
+    }
+  }
 }
 
+/* Ion Input - QDT Style */
+ion-input, ion-textarea {
+  --background: var(--qdt-bg-secondary);
+  --border-color: var(--qdt-border-default);
+  --border-radius: 0;
+  --padding-start: 12px;
+  --padding-end: 12px;
+  --placeholder-color: var(--qdt-text-subtle);
+  --placeholder-opacity: 1;
+  font-family: var(--qdt-font-mono);
+  font-size: 13px;
+  letter-spacing: var(--qdt-tracking-wide);
+  color: var(--qdt-text-primary);
+  border: 1px solid var(--qdt-border-default);
+
+  &:focus-within {
+    border-color: var(--qdt-border-focus);
+    outline: none;
+    box-shadow: 0 0 0 1px rgba(113, 113, 122, 0.3);
+  }
+}
+
+/* Ion Select - QDT Style */
+ion-select {
+  --placeholder-color: var(--qdt-text-muted);
+  font-family: var(--qdt-font-mono);
+  font-size: 13px;
+  letter-spacing: var(--qdt-tracking-wide);
+}
+
+/* Ion Button - QDT Style */
+ion-button {
+  --border-radius: 0;
+  --padding-start: 24px;
+  --padding-end: 24px;
+  font-family: var(--qdt-font-mono);
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: var(--qdt-tracking-widest);
+  text-transform: uppercase;
+
+  &[fill="solid"], &:not([fill]) {
+    --background: var(--qdt-bg-tertiary);
+    --background-hover: var(--qdt-bg-elevated);
+    --background-activated: var(--qdt-border-strong);
+    --color: var(--qdt-text-primary);
+    border: 1px solid var(--qdt-border-strong);
+  }
+
+  &[fill="outline"] {
+    --background: transparent;
+    --background-hover: var(--qdt-bg-secondary);
+    --border-color: var(--qdt-border-default);
+    --border-width: 1px;
+    --color: var(--qdt-text-secondary);
+
+    &:hover {
+      --border-color: var(--qdt-border-focus);
+      --color: var(--qdt-text-primary);
+    }
+  }
+
+  &[fill="clear"] {
+    --color: var(--qdt-text-muted);
+
+    &:hover {
+      --color: var(--qdt-text-secondary);
+    }
+  }
+
+  &[color="primary"] {
+    --background: var(--qdt-bg-tertiary);
+    --color: var(--qdt-text-primary);
+    border: 1px solid var(--qdt-border-strong);
+  }
+
+  &[color="danger"] {
+    --background: rgba(220, 38, 38, 0.1);
+    --background-hover: rgba(220, 38, 38, 0.2);
+    --color: var(--qdt-accent-red);
+    border: 1px solid var(--qdt-accent-red-dim);
+  }
+
+  &[color="success"] {
+    --background: rgba(22, 163, 74, 0.1);
+    --background-hover: rgba(22, 163, 74, 0.2);
+    --color: var(--qdt-accent-green);
+    border: 1px solid var(--qdt-accent-green-dim);
+  }
+
+  &[color="warning"] {
+    --background: rgba(217, 119, 6, 0.1);
+    --background-hover: rgba(217, 119, 6, 0.2);
+    --color: var(--qdt-accent-amber);
+    border: 1px solid var(--qdt-accent-amber-dim);
+  }
+}
+
+/* Ion Segment - QDT Style */
 ion-segment {
-  --background: rgba(255, 255, 255, 0.05);
-  border-radius: 8px;
+  --background: var(--qdt-bg-secondary);
+  border: 1px solid var(--qdt-border-subtle);
+  border-radius: 0;
 }
 
 ion-segment-button {
-  --indicator-color: var(--ion-color-primary);
-  --color: rgba(255, 255, 255, 0.6);
-  --color-checked: var(--ion-color-primary);
+  --background: transparent;
+  --background-checked: var(--qdt-bg-tertiary);
+  --color: var(--qdt-text-muted);
+  --color-checked: var(--qdt-text-primary);
+  --indicator-color: transparent;
+  --border-radius: 0;
+  font-family: var(--qdt-font-mono);
+  font-size: 10px;
+  letter-spacing: var(--qdt-tracking-widest);
+  text-transform: uppercase;
+  min-height: 36px;
+
+  &::part(indicator-background) {
+    background: var(--qdt-bg-tertiary);
+    border: 1px solid var(--qdt-border-default);
+  }
 }
 
-ion-button {
-  --border-radius: 8px;
-  text-transform: none;
-  font-weight: 500;
-}
-
+/* Ion Badge - QDT Style */
 ion-badge {
-  --padding-start: 8px;
-  --padding-end: 8px;
-  --padding-top: 4px;
-  --padding-bottom: 4px;
-  border-radius: 6px;
+  --padding-start: 6px;
+  --padding-end: 6px;
+  --padding-top: 2px;
+  --padding-bottom: 2px;
+  font-family: var(--qdt-font-mono);
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: var(--qdt-tracking-widest);
+  text-transform: uppercase;
+  border-radius: 0;
+  background: var(--qdt-bg-tertiary);
+  color: var(--qdt-text-secondary);
+  border: 1px solid var(--qdt-border-default);
 }
 
-/* Scrollbar Styling */
+/* Ion Chip - QDT Style */
+ion-chip {
+  --background: var(--qdt-bg-secondary);
+  --color: var(--qdt-text-secondary);
+  border: 1px solid var(--qdt-border-subtle);
+  border-radius: 0;
+  font-family: var(--qdt-font-mono);
+  font-size: 10px;
+  letter-spacing: var(--qdt-tracking-wider);
+  text-transform: uppercase;
+  height: 24px;
+}
+
+/* Ion Toggle - QDT Style */
+ion-toggle {
+  --track-background: var(--qdt-bg-tertiary);
+  --track-background-checked: var(--qdt-accent-green-dim);
+  --handle-background: var(--qdt-text-muted);
+  --handle-background-checked: var(--qdt-accent-green);
+}
+
+/* Ion Checkbox - QDT Style */
+ion-checkbox {
+  --background: var(--qdt-bg-secondary);
+  --background-checked: var(--qdt-accent-amber-dim);
+  --border-color: var(--qdt-border-default);
+  --border-color-checked: var(--qdt-accent-amber);
+  --checkmark-color: var(--qdt-accent-amber);
+  --border-radius: 0;
+}
+
+/* Ion Radio - QDT Style */
+ion-radio {
+  --color: var(--qdt-border-default);
+  --color-checked: var(--qdt-text-secondary);
+}
+
+/* Ion Spinner - QDT Style */
+ion-spinner {
+  --color: var(--qdt-text-muted);
+}
+
+/* Ion List - QDT Style */
+ion-list {
+  background: transparent;
+  padding: 0;
+
+  ion-list-header {
+    font-family: var(--qdt-font-mono);
+    font-size: 10px;
+    letter-spacing: var(--qdt-tracking-ultra);
+    text-transform: uppercase;
+    color: var(--qdt-text-muted);
+    padding-left: 16px;
+    margin-top: 16px;
+
+    &::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--qdt-border-subtle);
+      margin-left: 12px;
+      margin-right: 16px;
+    }
+  }
+}
+
+/* Ion Tab Bar - QDT Style */
+ion-tab-bar {
+  --background: rgba(9, 9, 11, 0.95);
+  --border: 1px solid var(--qdt-border-subtle);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+ion-tab-button {
+  --color: var(--qdt-text-subtle);
+  --color-selected: var(--qdt-text-primary);
+  font-family: var(--qdt-font-mono);
+  font-size: 9px;
+  letter-spacing: var(--qdt-tracking-wider);
+  text-transform: uppercase;
+
+  ion-icon {
+    font-size: 20px;
+  }
+
+  &.tab-selected {
+    ion-icon {
+      color: var(--qdt-text-primary);
+    }
+  }
+}
+
+/* Ion FAB - QDT Style */
+ion-fab-button {
+  --background: var(--qdt-bg-tertiary);
+  --color: var(--qdt-text-primary);
+  --border-radius: 0;
+  border: 1px solid var(--qdt-border-strong);
+
+  &:hover {
+    --background: var(--qdt-bg-elevated);
+  }
+}
+
+/* Ion Alert - QDT Style */
+ion-alert {
+  --background: var(--qdt-bg-secondary);
+  --backdrop-opacity: 0.8;
+
+  .alert-wrapper {
+    border: 1px solid var(--qdt-border-default);
+    border-radius: 0;
+  }
+
+  .alert-head {
+    padding: 16px;
+    border-bottom: 1px solid var(--qdt-border-subtle);
+  }
+
+  .alert-title {
+    font-family: var(--qdt-font-mono);
+    font-size: 12px;
+    letter-spacing: var(--qdt-tracking-widest);
+    text-transform: uppercase;
+    color: var(--qdt-text-primary);
+  }
+
+  .alert-sub-title {
+    font-family: var(--qdt-font-mono);
+    font-size: 11px;
+    color: var(--qdt-text-muted);
+  }
+
+  .alert-message {
+    font-family: var(--qdt-font-mono);
+    font-size: 12px;
+    color: var(--qdt-text-secondary);
+    padding: 16px;
+  }
+
+  .alert-button-group {
+    padding: 8px 16px 16px;
+  }
+
+  .alert-button {
+    font-family: var(--qdt-font-mono);
+    font-size: 10px;
+    letter-spacing: var(--qdt-tracking-widest);
+    text-transform: uppercase;
+    border: 1px solid var(--qdt-border-default);
+    border-radius: 0;
+  }
+}
+
+/* Ion Action Sheet - QDT Style */
+ion-action-sheet {
+  --background: var(--qdt-bg-secondary);
+  --backdrop-opacity: 0.8;
+
+  .action-sheet-wrapper {
+    border: 1px solid var(--qdt-border-default);
+  }
+
+  .action-sheet-title {
+    font-family: var(--qdt-font-mono);
+    font-size: 11px;
+    letter-spacing: var(--qdt-tracking-widest);
+    text-transform: uppercase;
+    color: var(--qdt-text-muted);
+  }
+
+  .action-sheet-button {
+    font-family: var(--qdt-font-mono);
+    font-size: 12px;
+    letter-spacing: var(--qdt-tracking-wider);
+    color: var(--qdt-text-secondary);
+
+    &:hover {
+      background: var(--qdt-bg-tertiary);
+    }
+
+    &.action-sheet-destructive {
+      color: var(--qdt-accent-red);
+    }
+  }
+}
+
+/* Ion Toast - QDT Style */
+ion-toast {
+  --background: var(--qdt-bg-secondary);
+  --border-radius: 0;
+  --color: var(--qdt-text-primary);
+  font-family: var(--qdt-font-mono);
+  font-size: 12px;
+  letter-spacing: var(--qdt-tracking-wide);
+
+  &::part(container) {
+    border: 1px solid var(--qdt-border-default);
+  }
+
+  &[color="success"]::part(container) {
+    border-color: var(--qdt-accent-green-dim);
+    background: rgba(22, 163, 74, 0.1);
+  }
+
+  &[color="danger"]::part(container) {
+    border-color: var(--qdt-accent-red-dim);
+    background: rgba(220, 38, 38, 0.1);
+  }
+
+  &[color="warning"]::part(container) {
+    border-color: var(--qdt-accent-amber-dim);
+    background: rgba(217, 119, 6, 0.1);
+  }
+}
+
+/* Ion Modal - QDT Style */
+ion-modal {
+  --background: var(--qdt-bg-primary);
+  --border-radius: 0;
+
+  &::part(content) {
+    border: 1px solid var(--qdt-border-default);
+  }
+}
+
+/* ============================================
+   QDT UTILITY CLASSES
+   ============================================ */
+
+/* Text Colors */
+.qdt-text-primary { color: var(--qdt-text-primary) !important; }
+.qdt-text-secondary { color: var(--qdt-text-secondary) !important; }
+.qdt-text-muted { color: var(--qdt-text-muted) !important; }
+.qdt-text-subtle { color: var(--qdt-text-subtle) !important; }
+.qdt-text-red { color: var(--qdt-accent-red) !important; }
+.qdt-text-amber { color: var(--qdt-accent-amber) !important; }
+.qdt-text-green { color: var(--qdt-accent-green) !important; }
+.qdt-text-cyan { color: var(--qdt-accent-cyan) !important; }
+
+/* Background Colors */
+.qdt-bg-primary { background-color: var(--qdt-bg-primary) !important; }
+.qdt-bg-secondary { background-color: var(--qdt-bg-secondary) !important; }
+.qdt-bg-tertiary { background-color: var(--qdt-bg-tertiary) !important; }
+
+/* Border Colors */
+.qdt-border { border: 1px solid var(--qdt-border-default) !important; }
+.qdt-border-subtle { border: 1px solid var(--qdt-border-subtle) !important; }
+.qdt-border-strong { border: 1px solid var(--qdt-border-strong) !important; }
+
+/* Typography */
+.qdt-mono { font-family: var(--qdt-font-mono) !important; }
+.qdt-tracking-wide { letter-spacing: var(--qdt-tracking-wide) !important; }
+.qdt-tracking-wider { letter-spacing: var(--qdt-tracking-wider) !important; }
+.qdt-tracking-widest { letter-spacing: var(--qdt-tracking-widest) !important; }
+.qdt-tracking-ultra { letter-spacing: var(--qdt-tracking-ultra) !important; }
+.qdt-uppercase { text-transform: uppercase !important; }
+
+/* Text Sizes */
+.qdt-text-xs { font-size: 10px !important; }
+.qdt-text-sm { font-size: 12px !important; }
+.qdt-text-base { font-size: 14px !important; }
+.qdt-text-lg { font-size: 16px !important; }
+.qdt-text-xl { font-size: 18px !important; }
+
+/* ============================================
+   QDT VHS EFFECTS
+   ============================================ */
+
+/* Scanlines Overlay */
+.qdt-scanlines {
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  opacity: var(--qdt-scanline-opacity);
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 1px,
+    rgba(255, 255, 255, 0.03) 1px,
+    rgba(255, 255, 255, 0.03) 2px
+  );
+}
+
+/* Vignette Overlay */
+.qdt-vignette {
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+  background: radial-gradient(
+    ellipse at center,
+    transparent 50%,
+    rgba(0, 0, 0, var(--qdt-vignette-opacity)) 100%
+  );
+}
+
+/* Corner Brackets */
+.qdt-corner-brackets {
+  pointer-events: none;
+  position: fixed;
+  z-index: 9997;
+
+  &.top-left {
+    top: 16px;
+    left: 16px;
+    width: 24px;
+    height: 24px;
+    border-left: 2px solid var(--qdt-border-default);
+    border-top: 2px solid var(--qdt-border-default);
+  }
+
+  &.top-right {
+    top: 16px;
+    right: 16px;
+    width: 24px;
+    height: 24px;
+    border-right: 2px solid var(--qdt-border-default);
+    border-top: 2px solid var(--qdt-border-default);
+  }
+
+  &.bottom-left {
+    bottom: 16px;
+    left: 16px;
+    width: 24px;
+    height: 24px;
+    border-left: 2px solid var(--qdt-border-default);
+    border-bottom: 2px solid var(--qdt-border-default);
+  }
+
+  &.bottom-right {
+    bottom: 16px;
+    right: 16px;
+    width: 24px;
+    height: 24px;
+    border-right: 2px solid var(--qdt-border-default);
+    border-bottom: 2px solid var(--qdt-border-default);
+  }
+}
+
+/* Glitch Effect */
+.qdt-glitch {
+  position: fixed;
+  inset: 0;
+  z-index: 9996;
+  pointer-events: none;
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(220, 38, 38, 0.05);
+    transform: translateX(-2px);
+  }
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(6, 182, 212, 0.05);
+    transform: translateX(2px);
+  }
+}
+
+/* REC Indicator */
+.qdt-rec-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--qdt-font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: var(--qdt-tracking-widest);
+  text-transform: uppercase;
+  color: var(--qdt-accent-red);
+
+  &::before {
+    content: '';
+    width: 8px;
+    height: 8px;
+    background: var(--qdt-accent-red);
+    border-radius: 50%;
+    animation: qdt-pulse 1s ease-in-out infinite;
+  }
+}
+
+/* Status Indicator */
+.qdt-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--qdt-font-mono);
+  font-size: 10px;
+  letter-spacing: var(--qdt-tracking-wider);
+  text-transform: uppercase;
+
+  &::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+  }
+
+  &.connected::before {
+    background: var(--qdt-accent-green);
+    animation: qdt-pulse 2s ease-in-out infinite;
+  }
+
+  &.encoding::before {
+    background: var(--qdt-accent-amber);
+  }
+
+  &.standby::before {
+    background: var(--qdt-text-subtle);
+  }
+
+  &.error::before {
+    background: var(--qdt-accent-red);
+    animation: qdt-pulse 0.5s ease-in-out infinite;
+  }
+}
+
+/* Timestamp Display */
+.qdt-timestamp {
+  font-family: var(--qdt-font-mono);
+  font-size: 11px;
+  letter-spacing: var(--qdt-tracking-wide);
+  color: var(--qdt-text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Document Reference */
+.qdt-doc-ref {
+  font-family: var(--qdt-font-mono);
+  font-size: 10px;
+  letter-spacing: var(--qdt-tracking-widest);
+  text-transform: uppercase;
+  color: var(--qdt-text-subtle);
+  text-align: center;
+}
+
+/* Section Divider */
+.qdt-divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-family: var(--qdt-font-mono);
+  font-size: 10px;
+  letter-spacing: var(--qdt-tracking-ultra);
+  color: var(--qdt-text-subtle);
+  margin: 24px 0;
+
+  &::before,
+  &::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--qdt-border-subtle);
+  }
+}
+
+/* ============================================
+   QDT ANIMATIONS
+   ============================================ */
+
+@keyframes qdt-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+
+@keyframes qdt-glow-pulse {
+  0%, 100% {
+    box-shadow: 0 0 5px rgba(113, 113, 122, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 15px rgba(113, 113, 122, 0.5);
+  }
+}
+
+@keyframes qdt-flicker {
+  0% { opacity: 1; }
+  5% { opacity: 0.8; }
+  10% { opacity: 1; }
+  15% { opacity: 0.9; }
+  20% { opacity: 1; }
+  100% { opacity: 1; }
+}
+
+@keyframes qdt-scan {
+  0% {
+    transform: translateY(-100%);
+  }
+  100% {
+    transform: translateY(100%);
+  }
+}
+
+.qdt-animate-pulse {
+  animation: qdt-pulse 2s ease-in-out infinite;
+}
+
+.qdt-animate-glow {
+  animation: qdt-glow-pulse 2s ease-in-out infinite;
+}
+
+.qdt-animate-flicker {
+  animation: qdt-flicker 3s ease-in-out infinite;
+}
+
+/* ============================================
+   QDT FORM ELEMENTS
+   ============================================ */
+
+/* QDT Input Group */
+.qdt-input-group {
+  margin-bottom: 16px;
+
+  label {
+    display: block;
+    font-family: var(--qdt-font-mono);
+    font-size: 10px;
+    letter-spacing: var(--qdt-tracking-widest);
+    text-transform: uppercase;
+    color: var(--qdt-text-secondary);
+    margin-bottom: 8px;
+
+    .required {
+      color: var(--qdt-accent-red);
+      margin-left: 4px;
+    }
+  }
+
+  .hint {
+    font-family: var(--qdt-font-mono);
+    font-size: 10px;
+    letter-spacing: var(--qdt-tracking-wide);
+    color: var(--qdt-text-subtle);
+    margin-top: 4px;
+  }
+
+  input, textarea, select {
+    width: 100%;
+    background: var(--qdt-bg-secondary);
+    border: 1px solid var(--qdt-border-default);
+    color: var(--qdt-text-primary);
+    font-family: var(--qdt-font-mono);
+    font-size: 13px;
+    letter-spacing: var(--qdt-tracking-wide);
+    padding: 12px 16px;
+    outline: none;
+    transition: all 0.2s ease;
+
+    &::placeholder {
+      color: var(--qdt-text-subtle);
+    }
+
+    &:focus {
+      border-color: var(--qdt-border-focus);
+      box-shadow: 0 0 0 1px rgba(113, 113, 122, 0.3);
+    }
+
+    &:hover:not(:focus) {
+      border-color: var(--qdt-border-strong);
+    }
+  }
+
+  textarea {
+    resize: vertical;
+    min-height: 100px;
+  }
+
+  select {
+    appearance: none;
+    cursor: pointer;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2371717a' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 36px;
+  }
+}
+
+/* QDT Radio Group */
+.qdt-radio-group {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+
+  .qdt-radio-option {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    border: 1px solid var(--qdt-border-subtle);
+    background: var(--qdt-bg-secondary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover {
+      border-color: var(--qdt-border-default);
+      background: var(--qdt-bg-tertiary);
+    }
+
+    &.selected {
+      border-color: var(--qdt-border-focus);
+      background: rgba(113, 113, 122, 0.1);
+    }
+
+    .radio-indicator {
+      width: 16px;
+      height: 16px;
+      border: 2px solid var(--qdt-border-strong);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: all 0.2s ease;
+
+      &::after {
+        content: '';
+        width: 8px;
+        height: 8px;
+        background: transparent;
+        border-radius: 50%;
+        transition: all 0.2s ease;
+      }
+    }
+
+    &.selected .radio-indicator {
+      border-color: var(--qdt-text-secondary);
+
+      &::after {
+        background: var(--qdt-text-primary);
+      }
+    }
+
+    .radio-label {
+      font-family: var(--qdt-font-mono);
+      font-size: 11px;
+      letter-spacing: var(--qdt-tracking-widest);
+      text-transform: uppercase;
+      color: var(--qdt-text-muted);
+      transition: color 0.2s ease;
+    }
+
+    &.selected .radio-label {
+      color: var(--qdt-text-primary);
+    }
+  }
+}
+
+/* QDT Checkbox */
+.qdt-checkbox {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--qdt-border-subtle);
+  background: var(--qdt-bg-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    border-color: var(--qdt-border-default);
+  }
+
+  &.checked {
+    border-color: var(--qdt-accent-amber-dim);
+    background: rgba(217, 119, 6, 0.05);
+  }
+
+  .checkbox-indicator {
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--qdt-border-strong);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 2px;
+    transition: all 0.2s ease;
+  }
+
+  &.checked .checkbox-indicator {
+    border-color: var(--qdt-accent-amber);
+    background: rgba(217, 119, 6, 0.2);
+
+    ion-icon {
+      color: var(--qdt-accent-amber);
+      font-size: 12px;
+    }
+  }
+
+  .checkbox-content {
+    flex: 1;
+
+    .checkbox-label {
+      font-family: var(--qdt-font-mono);
+      font-size: 13px;
+      letter-spacing: var(--qdt-tracking-wide);
+      color: var(--qdt-text-primary);
+      margin-bottom: 4px;
+    }
+
+    .checkbox-description {
+      font-family: var(--qdt-font-mono);
+      font-size: 11px;
+      letter-spacing: var(--qdt-tracking-wide);
+      color: var(--qdt-text-muted);
+    }
+  }
+}
+
+/* ============================================
+   QDT PANEL / CARD STYLES
+   ============================================ */
+
+.qdt-panel {
+  background: var(--qdt-bg-secondary);
+  border: 1px solid var(--qdt-border-subtle);
+  padding: 16px;
+  margin-bottom: 16px;
+
+  &.elevated {
+    background: var(--qdt-bg-tertiary);
+    border-color: var(--qdt-border-default);
+  }
+
+  .qdt-panel-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--qdt-border-subtle);
+
+    ion-icon {
+      font-size: 18px;
+      color: var(--qdt-text-muted);
+    }
+
+    .title {
+      font-family: var(--qdt-font-mono);
+      font-size: 14px;
+      letter-spacing: var(--qdt-tracking-wider);
+      text-transform: uppercase;
+      color: var(--qdt-text-primary);
+    }
+
+    .subtitle {
+      font-family: var(--qdt-font-mono);
+      font-size: 10px;
+      letter-spacing: var(--qdt-tracking-widest);
+      text-transform: uppercase;
+      color: var(--qdt-text-subtle);
+      margin-left: auto;
+    }
+  }
+
+  .qdt-panel-content {
+    font-family: var(--qdt-font-mono);
+    font-size: 13px;
+    color: var(--qdt-text-secondary);
+    line-height: 1.6;
+  }
+}
+
+/* ============================================
+   QDT HEADER HUD
+   ============================================ */
+
+.qdt-hud {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 16px;
+  font-family: var(--qdt-font-mono);
+  font-size: 10px;
+  letter-spacing: var(--qdt-tracking-widest);
+  color: var(--qdt-text-muted);
+
+  .qdt-hud-left,
+  .qdt-hud-right {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .qdt-hud-right {
+    text-align: right;
+    align-items: flex-end;
+  }
+
+  .sector {
+    color: var(--qdt-text-subtle);
+  }
+
+  .restricted {
+    color: var(--qdt-accent-amber);
+    font-weight: 500;
+  }
+}
+
+/* ============================================
+   QDT PROGRESS / LEVEL INDICATOR
+   ============================================ */
+
+.qdt-progress {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  .progress-value {
+    font-family: var(--qdt-font-mono);
+    font-size: 16px;
+    letter-spacing: var(--qdt-tracking-ultra);
+    color: var(--qdt-text-primary);
+    min-width: 60px;
+    text-align: center;
+    background: var(--qdt-bg-secondary);
+    border: 1px solid var(--qdt-border-default);
+    padding: 8px 12px;
+  }
+
+  .progress-bar {
+    flex: 1;
+    height: 12px;
+    background: var(--qdt-bg-secondary);
+    border: 1px solid var(--qdt-border-subtle);
+    overflow: hidden;
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--qdt-border-default), var(--qdt-text-muted));
+      transition: width 0.3s ease;
+    }
+  }
+
+  .progress-label {
+    font-family: var(--qdt-font-mono);
+    font-size: 11px;
+    letter-spacing: var(--qdt-tracking-wide);
+    color: var(--qdt-text-muted);
+    font-variant-numeric: tabular-nums;
+    min-width: 50px;
+    text-align: right;
+  }
+}
+
+/* ============================================
+   SCROLLBAR STYLING
+   ============================================ */
+
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--qdt-bg-secondary);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 3px;
+  background: var(--qdt-border-default);
+
+  &:hover {
+    background: var(--qdt-border-strong);
+  }
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.3);
-}
+/* ============================================
+   LEGACY COMPATIBILITY - Gradual Migration
+   ============================================ */
 
-/* Font Configuration - Using system fonts for performance */
-body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-}
-
-code, .mono {
-  font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
-}
-
-/* Utility Classes */
+/* Gradients for badges/ranks */
 .text-gradient {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--qdt-text-secondary) 0%, var(--qdt-text-muted) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
 .gradient-border {
-  border: 2px solid transparent;
-  background: linear-gradient(#1a1a2e, #1a1a2e) padding-box,
-              linear-gradient(135deg, #667eea, #764ba2) border-box;
+  border: 1px solid var(--qdt-border-default);
 }
 
 .glow-primary {
-  box-shadow: 0 0 20px rgba(102, 126, 234, 0.5);
+  box-shadow: var(--qdt-glow-cyan);
 }
 
 .glow-gold {
-  box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+  box-shadow: var(--qdt-glow-amber);
 }
 
-/* Animation Utilities */
+/* Animation Utilities - Legacy */
 @keyframes pulse-glow {
   0%, 100% {
-    box-shadow: 0 0 10px rgba(102, 126, 234, 0.5);
+    box-shadow: 0 0 5px rgba(113, 113, 122, 0.3);
   }
   50% {
-    box-shadow: 0 0 30px rgba(102, 126, 234, 0.8);
+    box-shadow: 0 0 15px rgba(113, 113, 122, 0.5);
   }
 }
 
@@ -219,7 +1317,7 @@ code, .mono {
     transform: translateY(0);
   }
   50% {
-    transform: translateY(-10px);
+    transform: translateY(-5px);
   }
 }
 
@@ -227,43 +1325,36 @@ code, .mono {
   animation: float 3s ease-in-out infinite;
 }
 
-/* Input Focus States - Enhanced visual feedback */
+/* Focus States - Legacy */
 ion-item.item-has-focus {
-  --background: rgba(102, 126, 234, 0.1);
-  --border-color: var(--ion-color-primary);
-  border-left: 3px solid var(--ion-color-primary);
+  --background: rgba(113, 113, 122, 0.1);
+  --border-color: var(--qdt-border-focus);
+  border-left: 2px solid var(--qdt-border-focus);
   transition: all 0.2s ease;
 }
 
 ion-item.item-has-focus ion-label {
-  color: var(--ion-color-primary) !important;
+  color: var(--qdt-text-primary) !important;
 }
 
-/* Input items general styling */
 ion-item.item-input {
-  --background: rgba(255, 255, 255, 0.05);
-  --border-color: rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  margin-bottom: 12px;
+  --background: var(--qdt-bg-secondary);
+  --border-color: var(--qdt-border-subtle);
+  margin-bottom: 8px;
   transition: all 0.2s ease;
 }
 
 ion-item.item-input:hover {
-  --background: rgba(255, 255, 255, 0.08);
+  --background: var(--qdt-bg-tertiary);
 }
 
-/* Toggle styling */
+/* Toggle styling - Legacy */
 ion-toggle {
-  --track-background: rgba(255, 255, 255, 0.2);
-  --track-background-checked: var(--ion-color-primary);
+  --track-background: var(--qdt-bg-tertiary);
+  --track-background-checked: var(--qdt-accent-green-dim);
 }
 
-/* Select styling */
-ion-select {
-  --placeholder-color: rgba(255, 255, 255, 0.5);
-}
-
-/* Textarea focus */
+/* Textarea focus - Legacy */
 ion-textarea.has-focus {
-  --border-color: var(--ion-color-primary);
+  --border-color: var(--qdt-border-focus);
 }

@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
 import { IonApp, IonRouterOutlet } from '@ionic/angular/standalone';
+import { QdtEffectsComponent } from './shared/ui/qdt-effects/qdt-effects.component';
 import { addIcons } from 'ionicons';
 import {
   add,
@@ -77,15 +78,41 @@ import {
   book,
   bookOutline,
   speedometer,
-  speedometerOutline
+  speedometerOutline,
+  personCircle,
+  personCircleOutline,
+  documentText,
+  documentTextOutline,
+  terminal,
+  terminalOutline,
+  codeSlash,
+  codeSlashOutline,
+  server,
+  serverOutline,
+  shield,
+  shieldOutline,
+  key,
+  keyOutline,
+  apps,
+  appsOutline,
+  logIn,
+  logInOutline,
+  addCircle,
+  addCircleOutline,
+  trophy,
+  trophyOutline
 } from 'ionicons/icons';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [IonApp, IonRouterOutlet],
+  imports: [IonApp, IonRouterOutlet, QdtEffectsComponent],
   template: `
     <ion-app>
+      <!-- QDT VHS Effects Overlay -->
+      <app-qdt-effects></app-qdt-effects>
+
+      <!-- Main Router Outlet -->
       <ion-router-outlet></ion-router-outlet>
     </ion-app>
   `
@@ -168,7 +195,29 @@ export class AppComponent {
       speedometer,
       'speedometer-outline': speedometerOutline,
       'sparkles-outline': sparklesOutline,
-      'checkmark-circle-outline': checkmarkCircleOutline
+      'checkmark-circle-outline': checkmarkCircleOutline,
+      'person-circle': personCircle,
+      'person-circle-outline': personCircleOutline,
+      'document-text': documentText,
+      'document-text-outline': documentTextOutline,
+      terminal,
+      'terminal-outline': terminalOutline,
+      'code-slash': codeSlash,
+      'code-slash-outline': codeSlashOutline,
+      server,
+      'server-outline': serverOutline,
+      shield,
+      'shield-outline': shieldOutline,
+      key,
+      'key-outline': keyOutline,
+      apps,
+      'apps-outline': appsOutline,
+      'log-in': logIn,
+      'log-in-outline': logInOutline,
+      'add-circle': addCircle,
+      'add-circle-outline': addCircleOutline,
+      trophy,
+      'trophy-outline': trophyOutline
     });
   }
 }

@@ -18,101 +18,150 @@ import { SkillIconComponent, SkillIconName } from '../../../shared/ui/skill-icon
   imports: [CommonModule, FormsModule, IonicModule, StatBarComponent, StatsRadarComponent, SkillIconComponent],
   animations: [fadeInAnimation, statChangeAnimation],
   template: `
-    <ion-header>
+    <ion-header class="qdt-header">
       <ion-toolbar>
         <ion-buttons slot="start">
-          <ion-back-button defaultHref="/tabs/characters"></ion-back-button>
+          <ion-back-button defaultHref="/tabs/characters" text=""></ion-back-button>
         </ion-buttons>
-        <ion-title>{{ characterStore.selectedCharacter()?.name || 'Personaje' }}</ion-title>
+        <ion-title>
+          <div class="header-title">
+            <span class="title-prefix">●</span>
+            <span class="title-text">{{ characterStore.selectedCharacter()?.name?.toUpperCase() || 'SUJETO' }}</span>
+          </div>
+        </ion-title>
         <ion-buttons slot="end">
           <ion-button (click)="editCharacter()">
-            <ion-icon slot="icon-only" name="create"></ion-icon>
+            <ion-icon slot="icon-only" name="create-outline"></ion-icon>
           </ion-button>
           <ion-button (click)="shareCharacter()">
-            <ion-icon slot="icon-only" name="share"></ion-icon>
+            <ion-icon slot="icon-only" name="share-outline"></ion-icon>
           </ion-button>
         </ion-buttons>
       </ion-toolbar>
     </ion-header>
 
-    <ion-content>
+    <ion-content class="qdt-content">
       @if (characterStore.loading()) {
         <div class="loading-container">
-          <ion-spinner name="crescent"></ion-spinner>
+          <div class="loading-spinner"></div>
+          <span class="loading-text">CARGANDO DATOS...</span>
         </div>
       } @else if (character()) {
-        <div class="character-header" [style.background]="character()!.avatar?.backgroundColor">
-          <div class="avatar-container">
-            @if (character()!.avatar?.photoUrl) {
-              <img [src]="character()!.avatar?.photoUrl" class="avatar" alt="Avatar">
-            } @else {
-              <div class="avatar-placeholder">
-                <ion-icon name="person-outline"></ion-icon>
-              </div>
-            }
-            <!-- Only show awakening badge if universe has awakening enabled -->
-            @if (universeHasAwakening()) {
-              <div class="awakening-badge" [class]="'rank-' + character()!.progression.awakening">
-                {{ character()!.progression.awakening }}
-              </div>
-            }
-          </div>
+        <!-- Character Header Panel -->
+        <div class="character-header-panel">
+          <div class="panel-corner top-left"></div>
+          <div class="panel-corner top-right"></div>
+          <div class="panel-corner bottom-left"></div>
+          <div class="panel-corner bottom-right"></div>
 
-          <div class="character-info">
-            <h1>{{ character()!.name }}</h1>
-            <!-- Only show level if universe has awakening enabled -->
-            @if (universeHasAwakening()) {
-              <div class="level-section">
-                <ion-icon name="star" color="warning"></ion-icon>
-                <span>Nivel {{ character()!.progression.level }}</span>
+          <div class="header-content">
+            <div class="avatar-container">
+              @if (character()!.avatar?.photoUrl) {
+                <img [src]="character()!.avatar?.photoUrl" class="avatar" alt="Avatar">
+              } @else {
+                <div class="avatar-placeholder">
+                  <ion-icon name="person-outline"></ion-icon>
+                </div>
+              }
+              <div class="avatar-scanline"></div>
+              @if (universeHasAwakening()) {
+                <div class="awakening-badge" [class]="'rank-' + character()!.progression.awakening">
+                  {{ character()!.progression.awakening }}
+                </div>
+              }
+            </div>
+
+            <div class="character-info">
+              <div class="info-row">
+                <span class="info-label">ID</span>
+                <span class="info-value">{{ (character()!.id?.slice(0, 8) || '').toUpperCase() }}</span>
               </div>
-            }
-            @if (character()!.progression.title) {
-              <span class="title">{{ character()!.progression.title }}</span>
-            }
+              <h1 class="character-name">{{ character()!.name }}</h1>
+              @if (universeHasAwakening()) {
+                <div class="level-row">
+                  <span class="level-label">NIVEL</span>
+                  <span class="level-value">{{ character()!.progression.level }}</span>
+                </div>
+              }
+              @if (character()!.progression.title) {
+                <div class="title-row">{{ character()!.progression.title }}</div>
+              }
+            </div>
+
+            <div class="status-indicator">
+              <div class="status-dot active"></div>
+              <span class="status-text">ACTIVO</span>
+            </div>
           </div>
         </div>
 
-        <!-- Character Description (not shown in shareable card) -->
+        <!-- Character Description -->
         @if (character()!.description) {
-          <div class="description-section">
-            <p>{{ character()!.description }}</p>
+          <div class="description-panel">
+            <div class="description-header">
+              <span class="desc-icon">▸</span>
+              <span class="desc-label">DESCRIPCIÓN</span>
+            </div>
+            <p class="description-text">{{ character()!.description }}</p>
           </div>
         }
 
-        <ion-segment [(ngModel)]="viewMode" class="view-segment">
-          <ion-segment-button value="stats">
-            <ion-label>Estadísticas</ion-label>
-          </ion-segment-button>
-          <ion-segment-button value="radar">
-            <ion-label>Radar</ion-label>
-          </ion-segment-button>
-          <ion-segment-button value="skills">
-            <ion-label>Habilidades</ion-label>
-          </ion-segment-button>
-          <ion-segment-button value="history">
-            <ion-label>Historial</ion-label>
-          </ion-segment-button>
-        </ion-segment>
+        <!-- View Mode Tabs -->
+        <div class="view-tabs">
+          <button
+            class="tab-btn"
+            [class.active]="viewMode() === 'stats'"
+            (click)="viewMode.set('stats')"
+          >
+            <span class="tab-icon">◈</span>
+            <span class="tab-label">STATS</span>
+          </button>
+          <button
+            class="tab-btn"
+            [class.active]="viewMode() === 'radar'"
+            (click)="viewMode.set('radar')"
+          >
+            <span class="tab-icon">◇</span>
+            <span class="tab-label">RADAR</span>
+          </button>
+          <button
+            class="tab-btn"
+            [class.active]="viewMode() === 'skills'"
+            (click)="viewMode.set('skills')"
+          >
+            <span class="tab-icon">⚡</span>
+            <span class="tab-label">HABILIDADES</span>
+          </button>
+          <button
+            class="tab-btn"
+            [class.active]="viewMode() === 'history'"
+            (click)="viewMode.set('history')"
+          >
+            <span class="tab-icon">◷</span>
+            <span class="tab-label">HISTORIAL</span>
+          </button>
+        </div>
 
         @switch (viewMode()) {
           @case ('stats') {
             <div class="stats-section" @fadeIn>
-              <div class="total-stats">
-                <span class="label">Total de Estadísticas</span>
-                <span class="value">{{ characterStore.totalStats() }}</span>
+              <div class="total-stats-panel">
+                <span class="total-label">PODER TOTAL</span>
+                <span class="total-value">{{ characterStore.totalStats() }}</span>
               </div>
 
-              @for (stat of sortedStats(); track stat.key) {
-                <app-stat-bar
-                  [statName]="getStatName(stat.key)"
-                  [statAbbreviation]="getStatAbbreviation(stat.key)"
-                  [statIcon]="getStatIcon(stat.key)"
-                  [statValue]="stat.value"
-                  [statMaxValue]="getStatMax(stat.key)"
-                  [statColor]="getStatColor(stat.key)"
-                ></app-stat-bar>
-              }
+              <div class="stats-list">
+                @for (stat of sortedStats(); track stat.key) {
+                  <app-stat-bar
+                    [statName]="getStatName(stat.key)"
+                    [statAbbreviation]="getStatAbbreviation(stat.key)"
+                    [statIcon]="getStatIcon(stat.key)"
+                    [statValue]="stat.value"
+                    [statMaxValue]="getStatMax(stat.key)"
+                    [statColor]="getStatColor(stat.key)"
+                  ></app-stat-bar>
+                }
+              </div>
             </div>
           }
           @case ('radar') {
@@ -129,67 +178,77 @@ import { SkillIconComponent, SkillIconName } from '../../../shared/ui/skill-icon
             <div class="skills-section" @fadeIn>
               @if (characterStore.selectedCharacterSkills().length === 0) {
                 <div class="empty-section">
-                  <ion-icon name="flash-outline"></ion-icon>
-                  <p>Sin habilidades registradas</p>
-                  <ion-button fill="outline" (click)="addSkill()">
-                    Añadir Habilidad
-                  </ion-button>
+                  <div class="empty-icon-box">
+                    <ion-icon name="flash-outline"></ion-icon>
+                  </div>
+                  <p class="empty-text">SIN HABILIDADES REGISTRADAS</p>
+                  <button class="qdt-button" (click)="addSkill()">
+                    <ion-icon name="add"></ion-icon>
+                    <span>AÑADIR HABILIDAD</span>
+                  </button>
                 </div>
               } @else {
-                @for (skill of characterStore.selectedCharacterSkills(); track skill.id) {
-                  <div class="skill-card" (click)="viewSkill(skill)">
-                    <div class="skill-header">
-                      <div class="skill-icon">
-                        <app-skill-icon [icon]="$any(skill.icon) || 'sparkle'" [size]="32"></app-skill-icon>
-                      </div>
-                      <div class="skill-titles">
-                        <h3>{{ skill.name }}</h3>
-                        @if (skill.subtitle) {
-                          <span class="skill-subtitle">"{{ skill.subtitle }}"</span>
-                        }
-                      </div>
-                      <ion-badge [color]="getCategoryColor(skill.category)">
-                        {{ skill.category }}
-                      </ion-badge>
-                    </div>
+                <div class="skills-list">
+                  @for (skill of characterStore.selectedCharacterSkills(); track skill.id) {
+                    <div class="skill-card" (click)="viewSkill(skill)">
+                      <div class="skill-corner tl"></div>
+                      <div class="skill-corner tr"></div>
+                      <div class="skill-corner bl"></div>
+                      <div class="skill-corner br"></div>
 
-                    @if (skill.quote) {
-                      <p class="skill-quote">"{{ skill.quote }}"</p>
-                    }
-
-                    <p class="skill-description">
-                      {{ skill.description.length > 150 ? (skill.description | slice:0:150) + '...' : skill.description }}
-                    </p>
-
-                    @if (skill.effects && skill.effects.length > 0) {
-                      <div class="skill-effects">
-                        @for (effect of skill.effects.slice(0, 2); track $index) {
-                          @if (effect.description) {
-                            <span class="effect-badge">
-                              <ion-icon name="checkmark-circle"></ion-icon>
-                              {{ effect.description.length > 50 ? (effect.description | slice:0:50) + '...' : effect.description }}
-                            </span>
+                      <div class="skill-header">
+                        <div class="skill-icon">
+                          <app-skill-icon [icon]="$any(skill.icon) || 'sparkle'" [size]="28"></app-skill-icon>
+                        </div>
+                        <div class="skill-titles">
+                          <h3 class="skill-name">{{ skill.name }}</h3>
+                          @if (skill.subtitle) {
+                            <span class="skill-subtitle">"{{ skill.subtitle }}"</span>
                           }
-                        }
-                        @if (skill.effects.length > 2) {
-                          <span class="more-effects">+{{ skill.effects.length - 2 }} más</span>
-                        }
+                        </div>
+                        <span class="skill-category" [attr.data-category]="skill.category">
+                          {{ skill.category }}
+                        </span>
                       </div>
-                    }
 
-                    @if (skill.limitations && skill.limitations.length > 0) {
-                      <div class="skill-limitations">
-                        <ion-icon name="warning" color="warning"></ion-icon>
-                        <span>{{ skill.limitations.length }} limitación{{ skill.limitations.length > 1 ? 'es' : '' }}</span>
-                      </div>
-                    }
-                  </div>
-                }
+                      @if (skill.quote) {
+                        <p class="skill-quote">"{{ skill.quote }}"</p>
+                      }
 
-                <ion-button expand="block" fill="outline" (click)="addSkill()">
-                  <ion-icon slot="start" name="add"></ion-icon>
-                  Añadir Habilidad
-                </ion-button>
+                      <p class="skill-description">
+                        {{ skill.description.length > 150 ? (skill.description | slice:0:150) + '...' : skill.description }}
+                      </p>
+
+                      @if (skill.effects && skill.effects.length > 0) {
+                        <div class="skill-effects">
+                          @for (effect of skill.effects.slice(0, 2); track $index) {
+                            @if (effect.description) {
+                              <span class="effect-badge">
+                                <ion-icon name="checkmark-circle"></ion-icon>
+                                {{ effect.description.length > 50 ? (effect.description | slice:0:50) + '...' : effect.description }}
+                              </span>
+                            }
+                          }
+                          @if (skill.effects.length > 2) {
+                            <span class="more-effects">+{{ skill.effects.length - 2 }} más</span>
+                          }
+                        </div>
+                      }
+
+                      @if (skill.limitations && skill.limitations.length > 0) {
+                        <div class="skill-limitations">
+                          <ion-icon name="warning"></ion-icon>
+                          <span>{{ skill.limitations.length }} limitación{{ skill.limitations.length > 1 ? 'es' : '' }}</span>
+                        </div>
+                      }
+                    </div>
+                  }
+                </div>
+
+                <button class="qdt-button full-width" (click)="addSkill()">
+                  <ion-icon name="add"></ion-icon>
+                  <span>AÑADIR HABILIDAD</span>
+                </button>
               }
             </div>
           }
@@ -197,40 +256,43 @@ import { SkillIconComponent, SkillIconName } from '../../../shared/ui/skill-icon
             <div class="history-section" @fadeIn>
               @if (characterStore.selectedCharacterHistory().length === 0) {
                 <div class="empty-section">
-                  <ion-icon name="time-outline"></ion-icon>
-                  <p>Sin historial de acciones</p>
+                  <div class="empty-icon-box">
+                    <ion-icon name="time-outline"></ion-icon>
+                  </div>
+                  <p class="empty-text">SIN HISTORIAL DE ACCIONES</p>
                 </div>
               } @else {
-                <ion-list>
+                <div class="history-list">
                   @for (entry of characterStore.selectedCharacterHistory(); track entry.id) {
-                    <ion-item>
-                      <ion-icon name="chevron-forward" slot="start" color="medium"></ion-icon>
-                      <ion-label>
-                        <h3>{{ entry.action }}</h3>
-                        <p>
+                    <div class="history-item">
+                      <div class="history-marker"></div>
+                      <div class="history-content">
+                        <div class="history-header">
+                          <span class="history-action">{{ entry.action }}</span>
+                          <span class="history-time">{{ entry.timestamp | date:'short' }}</span>
+                        </div>
+                        <div class="history-changes">
                           @for (change of entry.appliedChanges; track change.stat) {
                             <span class="change-badge" [class.positive]="change.change > 0" [class.negative]="change.change < 0">
                               {{ change.stat }}: {{ change.change > 0 ? '+' : '' }}{{ change.change }}
                             </span>
                           }
-                        </p>
+                        </div>
                         @if (entry.appliedChanges[0]?.reason) {
                           <p class="change-reason">{{ entry.appliedChanges[0].reason }}</p>
                         }
-                      </ion-label>
-                      <ion-note slot="end">
-                        {{ entry.timestamp | date:'short' }}
-                      </ion-note>
-                    </ion-item>
+                      </div>
+                    </div>
                   }
-                </ion-list>
+                </div>
               }
             </div>
           }
         }
 
+        <!-- FAB Button -->
         <ion-fab slot="fixed" vertical="bottom" horizontal="end">
-          <ion-fab-button (click)="analyzeAction()">
+          <ion-fab-button (click)="analyzeAction()" class="qdt-fab">
             <ion-icon name="sparkles-outline"></ion-icon>
           </ion-fab-button>
         </ion-fab>
@@ -238,146 +300,384 @@ import { SkillIconComponent, SkillIconName } from '../../../shared/ui/skill-icon
     </ion-content>
   `,
   styles: [`
-    .loading-container {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 50vh;
+    .qdt-header ion-toolbar {
+      --background: var(--qdt-bg-primary);
+      --border-color: var(--qdt-border-subtle);
+      --color: var(--qdt-text-primary);
     }
 
-    .character-header {
+    .header-title {
       display: flex;
       align-items: center;
-      padding: 24px 16px;
+      gap: 8px;
+      font-family: var(--qdt-font-mono);
+      font-size: 12px;
+      letter-spacing: 0.1em;
+    }
+
+    .title-prefix {
+      color: var(--qdt-accent-green);
+      animation: qdt-pulse 2s ease-in-out infinite;
+    }
+
+    .title-text {
+      color: var(--qdt-text-primary);
+      font-weight: 500;
+    }
+
+    .qdt-content {
+      --background: var(--qdt-bg-primary);
+    }
+
+    .loading-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 50vh;
+      gap: 16px;
+    }
+
+    .loading-spinner {
+      width: 32px;
+      height: 32px;
+      border: 2px solid var(--qdt-border-subtle);
+      border-top-color: var(--qdt-accent-amber);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    .loading-text {
+      font-family: var(--qdt-font-mono);
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      color: var(--qdt-text-muted);
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    @keyframes qdt-pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    /* Character Header Panel */
+    .character-header-panel {
+      position: relative;
+      background: var(--qdt-bg-secondary);
+      border: 1px solid var(--qdt-border-subtle);
+      margin: 16px;
+      padding: 20px;
+    }
+
+    .panel-corner {
+      position: absolute;
+      width: 16px;
+      height: 16px;
+      border-color: var(--qdt-text-subtle);
+      border-style: solid;
+      border-width: 0;
+    }
+
+    .panel-corner.top-left { top: 4px; left: 4px; border-top-width: 1px; border-left-width: 1px; }
+    .panel-corner.top-right { top: 4px; right: 4px; border-top-width: 1px; border-right-width: 1px; }
+    .panel-corner.bottom-left { bottom: 4px; left: 4px; border-bottom-width: 1px; border-left-width: 1px; }
+    .panel-corner.bottom-right { bottom: 4px; right: 4px; border-bottom-width: 1px; border-right-width: 1px; }
+
+    .header-content {
+      display: flex;
+      align-items: flex-start;
       gap: 16px;
     }
 
     .avatar-container {
       position: relative;
+      flex-shrink: 0;
     }
 
     .avatar {
-      width: 100px;
-      height: 100px;
-      border-radius: 50%;
-      border: 3px solid rgba(255, 255, 255, 0.3);
+      width: 80px;
+      height: 80px;
       object-fit: cover;
+      border: 1px solid var(--qdt-border-default);
+      filter: grayscale(20%) contrast(1.1);
     }
 
     .avatar-placeholder {
-      width: 100px;
-      height: 100px;
-      border-radius: 50%;
-      background: rgba(255, 255, 255, 0.1);
+      width: 80px;
+      height: 80px;
+      background: var(--qdt-bg-tertiary);
       display: flex;
       align-items: center;
       justify-content: center;
-      border: 3px solid rgba(255, 255, 255, 0.3);
+      border: 1px solid var(--qdt-border-default);
     }
 
     .avatar-placeholder ion-icon {
-      font-size: 48px;
-      opacity: 0.5;
+      font-size: 36px;
+      color: var(--qdt-text-subtle);
+    }
+
+    .avatar-scanline {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0, 0, 0, 0.1) 2px,
+        rgba(0, 0, 0, 0.1) 4px
+      );
+      pointer-events: none;
     }
 
     .awakening-badge {
       position: absolute;
-      bottom: 0;
-      right: 0;
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
+      bottom: -6px;
+      right: -6px;
+      width: 26px;
+      height: 26px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 14px;
+      font-family: var(--qdt-font-mono);
+      font-size: 10px;
       font-weight: 700;
-      background: #333;
-      border: 3px solid;
+      background: var(--qdt-bg-tertiary);
+      border: 1px solid var(--qdt-border-default);
     }
 
-    .rank-E { background: #9E9E9E; border-color: #757575; }
-    .rank-D { background: #8BC34A; border-color: #689F38; }
-    .rank-C { background: #03A9F4; border-color: #0288D1; }
-    .rank-B { background: #9C27B0; border-color: #7B1FA2; }
-    .rank-A { background: #FF5722; border-color: #E64A19; }
-    .rank-S, .rank-SS, .rank-SSS {
-      background: linear-gradient(135deg, #FFD700, #FFA500);
-      border-color: #FFD700;
-      color: #000;
+    .rank-E { background: #52525b; color: #a1a1aa; }
+    .rank-D { background: #365314; color: #84cc16; }
+    .rank-C { background: #164e63; color: #22d3ee; }
+    .rank-B { background: #581c87; color: #a855f7; }
+    .rank-A { background: #7c2d12; color: #fb923c; }
+    .rank-S, .rank-SS, .rank-SSS { background: #78350f; color: #fbbf24; }
+
+    .character-info {
+      flex: 1;
     }
 
-    .character-info h1 {
+    .info-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+
+    .info-label {
+      font-family: var(--qdt-font-mono);
+      font-size: 9px;
+      letter-spacing: 0.1em;
+      color: var(--qdt-text-subtle);
+    }
+
+    .info-value {
+      font-family: var(--qdt-font-mono);
+      font-size: 9px;
+      letter-spacing: 0.05em;
+      color: var(--qdt-text-muted);
+    }
+
+    .character-name {
+      font-family: var(--qdt-font-mono);
+      font-size: 18px;
+      font-weight: 500;
+      letter-spacing: 0.05em;
+      color: var(--qdt-text-primary);
       margin: 0 0 8px 0;
-      font-size: 26px;
-      font-weight: 700;
+      text-transform: uppercase;
     }
 
-    .level-section {
+    .level-row {
       display: flex;
       align-items: center;
       gap: 6px;
-      font-size: 16px;
+      margin-bottom: 4px;
     }
 
-    .title {
+    .level-label {
+      font-family: var(--qdt-font-mono);
+      font-size: 9px;
+      letter-spacing: 0.15em;
+      color: var(--qdt-text-subtle);
+    }
+
+    .level-value {
+      font-family: var(--qdt-font-mono);
       font-size: 14px;
-      opacity: 0.7;
-      font-style: italic;
-      display: block;
-      margin-top: 4px;
+      font-weight: 600;
+      color: var(--qdt-accent-amber);
     }
 
-    .description-section {
+    .title-row {
+      font-family: var(--qdt-font-mono);
+      font-size: 10px;
+      font-style: italic;
+      color: var(--qdt-text-muted);
+    }
+
+    .status-indicator {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--qdt-text-subtle);
+    }
+
+    .status-dot.active {
+      background: var(--qdt-accent-green);
+      animation: qdt-pulse 2s ease-in-out infinite;
+    }
+
+    .status-text {
+      font-family: var(--qdt-font-mono);
+      font-size: 8px;
+      letter-spacing: 0.1em;
+      color: var(--qdt-text-subtle);
+    }
+
+    /* Description Panel */
+    .description-panel {
+      margin: 0 16px 16px;
       padding: 12px 16px;
-      background: rgba(255, 255, 255, 0.03);
-      border-top: 1px solid rgba(255, 255, 255, 0.1);
-      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      background: var(--qdt-bg-secondary);
+      border: 1px solid var(--qdt-border-subtle);
     }
 
-    .description-section p {
+    .description-header {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+
+    .desc-icon {
+      color: var(--qdt-text-subtle);
+      font-size: 10px;
+    }
+
+    .desc-label {
+      font-family: var(--qdt-font-mono);
+      font-size: 9px;
+      letter-spacing: 0.15em;
+      color: var(--qdt-text-subtle);
+    }
+
+    .description-text {
+      font-family: var(--qdt-font-mono);
+      font-size: 11px;
+      line-height: 1.6;
+      color: var(--qdt-text-muted);
       margin: 0;
-      font-size: 14px;
-      line-height: 1.5;
-      opacity: 0.85;
-      font-style: italic;
     }
 
-    .view-segment {
-      margin: 16px;
+    /* View Tabs */
+    .view-tabs {
+      display: flex;
+      margin: 0 16px 16px;
+      border: 1px solid var(--qdt-border-subtle);
+      background: var(--qdt-bg-secondary);
     }
 
-    .stats-section, .skills-section, .history-section, .radar-section {
-      padding: 16px;
+    .tab-btn {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 12px 8px;
+      background: transparent;
+      border: none;
+      border-right: 1px solid var(--qdt-border-subtle);
+      cursor: pointer;
+      transition: all 0.2s ease;
     }
 
-    .total-stats {
+    .tab-btn:last-child {
+      border-right: none;
+    }
+
+    .tab-btn .tab-icon {
+      font-size: 12px;
+      color: var(--qdt-text-subtle);
+    }
+
+    .tab-btn .tab-label {
+      font-family: var(--qdt-font-mono);
+      font-size: 9px;
+      letter-spacing: 0.1em;
+      color: var(--qdt-text-muted);
+    }
+
+    .tab-btn:hover {
+      background: var(--qdt-bg-tertiary);
+    }
+
+    .tab-btn.active {
+      background: var(--qdt-bg-tertiary);
+      border-bottom: 2px solid var(--qdt-accent-amber);
+    }
+
+    .tab-btn.active .tab-icon,
+    .tab-btn.active .tab-label {
+      color: var(--qdt-text-primary);
+    }
+
+    /* Stats Section */
+    .stats-section {
+      padding: 0 16px 16px;
+    }
+
+    .total-stats-panel {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      background: rgba(var(--ion-color-primary-rgb), 0.1);
       padding: 12px 16px;
-      border-radius: 8px;
-      margin-bottom: 20px;
+      background: var(--qdt-bg-secondary);
+      border: 1px solid var(--qdt-border-subtle);
+      margin-bottom: 16px;
     }
 
-    .total-stats .label {
-      font-size: 14px;
-      opacity: 0.8;
+    .total-label {
+      font-family: var(--qdt-font-mono);
+      font-size: 10px;
+      letter-spacing: 0.15em;
+      color: var(--qdt-text-subtle);
     }
 
-    .total-stats .value {
+    .total-value {
+      font-family: var(--qdt-font-mono);
       font-size: 24px;
-      font-weight: 700;
-      color: var(--ion-color-primary);
+      font-weight: 600;
+      color: var(--qdt-accent-amber);
+      font-variant-numeric: tabular-nums;
     }
 
+    .stats-list {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    /* Radar Section */
     .radar-section {
       display: flex;
       justify-content: center;
-      padding-top: 20px;
+      padding: 20px 16px;
     }
 
+    /* Empty Section */
     .empty-section {
       display: flex;
       flex-direction: column;
@@ -387,32 +687,99 @@ import { SkillIconComponent, SkillIconName } from '../../../shared/ui/skill-icon
       text-align: center;
     }
 
-    .empty-section ion-icon {
-      font-size: 64px;
-      opacity: 0.3;
+    .empty-icon-box {
+      width: 64px;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--qdt-border-subtle);
       margin-bottom: 16px;
     }
 
-    .empty-section p {
-      opacity: 0.6;
-      margin-bottom: 16px;
+    .empty-icon-box ion-icon {
+      font-size: 28px;
+      color: var(--qdt-text-subtle);
     }
 
-    /* Skill Cards */
-    .skill-card {
-      background: rgba(255, 255, 255, 0.05);
-      border-radius: 12px;
-      padding: 16px;
-      margin-bottom: 12px;
+    .empty-text {
+      font-family: var(--qdt-font-mono);
+      font-size: 10px;
+      letter-spacing: 0.15em;
+      color: var(--qdt-text-muted);
+      margin: 0 0 16px 0;
+    }
+
+    .qdt-button {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 12px 24px;
+      font-family: var(--qdt-font-mono);
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      font-weight: 500;
+      border: 1px solid var(--qdt-border-default);
+      background: var(--qdt-bg-secondary);
+      color: var(--qdt-text-primary);
       cursor: pointer;
-      transition: transform 0.2s, background 0.2s;
-      border: 1px solid rgba(255, 255, 255, 0.08);
+      transition: all 0.2s ease;
+    }
+
+    .qdt-button:hover {
+      background: var(--qdt-bg-tertiary);
+      border-color: var(--qdt-text-subtle);
+    }
+
+    .qdt-button.full-width {
+      width: calc(100% - 32px);
+      margin: 16px;
+    }
+
+    .qdt-button ion-icon {
+      font-size: 14px;
+    }
+
+    /* Skills Section */
+    .skills-section {
+      padding: 0 16px 80px;
+    }
+
+    .skills-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .skill-card {
+      position: relative;
+      background: var(--qdt-bg-secondary);
+      border: 1px solid var(--qdt-border-subtle);
+      padding: 16px;
+      cursor: pointer;
+      transition: all 0.2s ease;
     }
 
     .skill-card:hover {
-      transform: translateY(-2px);
-      background: rgba(255, 255, 255, 0.08);
+      border-color: var(--qdt-border-default);
+      background: var(--qdt-bg-tertiary);
     }
+
+    .skill-corner {
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      border-color: var(--qdt-text-subtle);
+      border-style: solid;
+      border-width: 0;
+      opacity: 0.5;
+    }
+
+    .skill-corner.tl { top: 4px; left: 4px; border-top-width: 1px; border-left-width: 1px; }
+    .skill-corner.tr { top: 4px; right: 4px; border-top-width: 1px; border-right-width: 1px; }
+    .skill-corner.bl { bottom: 4px; left: 4px; border-bottom-width: 1px; border-left-width: 1px; }
+    .skill-corner.br { bottom: 4px; right: 4px; border-bottom-width: 1px; border-right-width: 1px; }
 
     .skill-header {
       display: flex;
@@ -425,11 +792,10 @@ import { SkillIconComponent, SkillIconName } from '../../../shared/ui/skill-icon
       display: flex;
       align-items: center;
       justify-content: center;
-      width: 44px;
-      height: 44px;
-      background: rgba(255, 255, 255, 0.1);
-      border-radius: 10px;
-      color: var(--ion-color-primary);
+      width: 40px;
+      height: 40px;
+      background: var(--qdt-bg-tertiary);
+      border: 1px solid var(--qdt-border-subtle);
       flex-shrink: 0;
     }
 
@@ -437,40 +803,63 @@ import { SkillIconComponent, SkillIconName } from '../../../shared/ui/skill-icon
       flex: 1;
     }
 
-    .skill-titles h3 {
+    .skill-name {
+      font-family: var(--qdt-font-mono);
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: 0.05em;
+      color: var(--qdt-text-primary);
       margin: 0;
-      font-size: 16px;
-      font-weight: 600;
+      text-transform: uppercase;
     }
 
     .skill-subtitle {
-      font-size: 12px;
-      opacity: 0.6;
+      font-family: var(--qdt-font-mono);
+      font-size: 10px;
       font-style: italic;
+      color: var(--qdt-text-muted);
       display: block;
       margin-top: 2px;
     }
 
+    .skill-category {
+      font-family: var(--qdt-font-mono);
+      font-size: 8px;
+      letter-spacing: 0.1em;
+      padding: 4px 8px;
+      background: var(--qdt-bg-tertiary);
+      border: 1px solid var(--qdt-border-subtle);
+      color: var(--qdt-text-muted);
+    }
+
+    .skill-category[data-category="Activa"] { color: var(--qdt-accent-amber); border-color: var(--qdt-accent-amber); }
+    .skill-category[data-category="Pasiva"] { color: var(--qdt-text-muted); }
+    .skill-category[data-category="Magia"] { color: #a855f7; border-color: #a855f7; }
+    .skill-category[data-category="Combate"] { color: var(--qdt-accent-red); border-color: var(--qdt-accent-red); }
+    .skill-category[data-category="Soporte"] { color: var(--qdt-accent-green); border-color: var(--qdt-accent-green); }
+
     .skill-quote {
-      font-size: 13px;
+      font-family: var(--qdt-font-mono);
+      font-size: 10px;
       font-style: italic;
-      opacity: 0.7;
+      color: var(--qdt-text-muted);
       margin: 8px 0;
       padding-left: 12px;
-      border-left: 2px solid var(--ion-color-primary);
+      border-left: 2px solid var(--qdt-border-default);
     }
 
     .skill-description {
-      font-size: 14px;
-      opacity: 0.8;
+      font-family: var(--qdt-font-mono);
+      font-size: 11px;
+      line-height: 1.5;
+      color: var(--qdt-text-secondary);
       margin: 8px 0;
-      line-height: 1.4;
     }
 
     .skill-effects {
       display: flex;
       flex-wrap: wrap;
-      gap: 8px;
+      gap: 6px;
       margin-top: 12px;
     }
 
@@ -478,20 +867,22 @@ import { SkillIconComponent, SkillIconName } from '../../../shared/ui/skill-icon
       display: inline-flex;
       align-items: center;
       gap: 4px;
-      font-size: 11px;
+      font-family: var(--qdt-font-mono);
+      font-size: 9px;
       padding: 4px 8px;
-      background: rgba(var(--ion-color-success-rgb), 0.2);
-      color: var(--ion-color-success);
-      border-radius: 4px;
+      background: rgba(22, 163, 74, 0.1);
+      border: 1px solid rgba(22, 163, 74, 0.3);
+      color: var(--qdt-accent-green);
     }
 
     .effect-badge ion-icon {
-      font-size: 12px;
+      font-size: 10px;
     }
 
     .more-effects {
-      font-size: 11px;
-      opacity: 0.5;
+      font-family: var(--qdt-font-mono);
+      font-size: 9px;
+      color: var(--qdt-text-subtle);
       padding: 4px 8px;
     }
 
@@ -500,42 +891,116 @@ import { SkillIconComponent, SkillIconName } from '../../../shared/ui/skill-icon
       align-items: center;
       gap: 6px;
       margin-top: 8px;
-      font-size: 12px;
-      opacity: 0.7;
+      font-family: var(--qdt-font-mono);
+      font-size: 10px;
+      color: var(--qdt-accent-amber);
     }
 
     .skill-limitations ion-icon {
-      font-size: 14px;
-    }
-
-    /* History */
-    .change-badge {
-      display: inline-block;
-      padding: 2px 6px;
-      border-radius: 4px;
-      font-size: 11px;
-      margin-right: 4px;
-    }
-
-    .change-badge.positive {
-      background: rgba(76, 175, 80, 0.2);
-      color: #4CAF50;
-    }
-
-    .change-badge.negative {
-      background: rgba(244, 67, 54, 0.2);
-      color: #F44336;
-    }
-
-    .change-reason {
       font-size: 12px;
-      font-style: italic;
-      opacity: 0.6;
+    }
+
+    /* History Section */
+    .history-section {
+      padding: 0 16px 16px;
+    }
+
+    .history-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    .history-item {
+      display: flex;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--qdt-border-subtle);
+    }
+
+    .history-item:last-child {
+      border-bottom: none;
+    }
+
+    .history-marker {
+      width: 8px;
+      height: 8px;
+      background: var(--qdt-border-default);
+      flex-shrink: 0;
       margin-top: 4px;
     }
 
-    ion-fab-button {
-      --background: linear-gradient(135deg, #667eea, #764ba2);
+    .history-content {
+      flex: 1;
+    }
+
+    .history-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .history-action {
+      font-family: var(--qdt-font-mono);
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--qdt-text-primary);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .history-time {
+      font-family: var(--qdt-font-mono);
+      font-size: 9px;
+      color: var(--qdt-text-subtle);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .history-changes {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .change-badge {
+      font-family: var(--qdt-font-mono);
+      font-size: 9px;
+      padding: 3px 6px;
+      border: 1px solid var(--qdt-border-subtle);
+      background: var(--qdt-bg-tertiary);
+      color: var(--qdt-text-muted);
+    }
+
+    .change-badge.positive {
+      color: var(--qdt-accent-green);
+      border-color: rgba(22, 163, 74, 0.3);
+      background: rgba(22, 163, 74, 0.1);
+    }
+
+    .change-badge.negative {
+      color: var(--qdt-accent-red);
+      border-color: rgba(220, 38, 38, 0.3);
+      background: rgba(220, 38, 38, 0.1);
+    }
+
+    .change-reason {
+      font-family: var(--qdt-font-mono);
+      font-size: 10px;
+      font-style: italic;
+      color: var(--qdt-text-muted);
+      margin: 8px 0 0 0;
+    }
+
+    /* FAB */
+    .qdt-fab {
+      --background: var(--qdt-bg-secondary);
+      --border-radius: 0;
+      border: 1px solid var(--qdt-accent-amber);
+    }
+
+    .qdt-fab ion-icon {
+      color: var(--qdt-accent-amber);
     }
   `]
 })
