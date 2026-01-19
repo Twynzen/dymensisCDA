@@ -1,12 +1,12 @@
 import { Component, Input, Output, EventEmitter, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { IonicModule } from '@ionic/angular';
+import { IonIcon } from '@ionic/angular/standalone';
 import { Character, StatDefinition } from '../../../core/models';
 
 @Component({
   selector: 'app-character-card',
   standalone: true,
-  imports: [CommonModule, IonicModule],
+  imports: [CommonModule, IonIcon],
   template: `
     <div class="character-card" (click)="onCardClick()">
       <div class="card-content">

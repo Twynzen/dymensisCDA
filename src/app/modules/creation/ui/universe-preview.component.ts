@@ -1,12 +1,12 @@
 import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { IonicModule } from '@ionic/angular';
+import { IonIcon, IonList, IonItem, IonLabel, IonButton } from '@ionic/angular/standalone';
 import { Universe } from '../../../core/models';
 
 @Component({
   selector: 'app-universe-preview',
   standalone: true,
-  imports: [CommonModule, IonicModule],
+  imports: [CommonModule, IonIcon, IonList, IonItem, IonLabel, IonButton],
   template: `
     <div class="preview-card">
       <div class="preview-header" [style.background]="getHeaderBackground()">

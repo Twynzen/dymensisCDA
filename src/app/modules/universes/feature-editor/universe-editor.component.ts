@@ -2,7 +2,13 @@ import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { IonicModule, AlertController, ToastController, ModalController } from '@ionic/angular';
+import {
+  IonHeader, IonToolbar, IonButtons, IonBackButton, IonTitle,
+  IonContent, IonSpinner, IonSegment, IonSegmentButton, IonLabel,
+  IonItem, IonInput, IonTextarea, IonToggle, IonListHeader, IonButton, IonIcon, IonBadge,
+  IonItemSliding, IonItemOptions, IonItemOption, IonThumbnail,
+  AlertController, ToastController, ModalController
+} from '@ionic/angular/standalone';
 import { UniverseStore } from '../data-access/universe.store';
 import { ImageUploadComponent } from '../../../shared/ui/image-upload/image-upload.component';
 import { RaceEditorModalComponent } from './race-editor-modal.component';
@@ -18,7 +24,7 @@ import {
 @Component({
   selector: 'app-universe-editor',
   standalone: true,
-  imports: [CommonModule, FormsModule, IonicModule, ImageUploadComponent],
+  imports: [CommonModule, FormsModule, IonHeader, IonToolbar, IonButtons, IonBackButton, IonTitle, IonContent, IonSpinner, IonSegment, IonSegmentButton, IonLabel, IonItem, IonInput, IonTextarea, IonToggle, IonListHeader, IonButton, IonIcon, IonBadge, IonItemSliding, IonItemOptions, IonItemOption, IonThumbnail, ImageUploadComponent],
   template: `
     <ion-header>
       <ion-toolbar>

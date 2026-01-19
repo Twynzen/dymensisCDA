@@ -1,6 +1,6 @@
 import { Component, Input, Output, EventEmitter, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { IonicModule } from '@ionic/angular';
+import { IonChip, IonIcon, IonButton } from '@ionic/angular/standalone';
 import { AgenticAction, AgenticActionType } from '../models/agentic-action.model';
 
 /**
@@ -10,7 +10,7 @@ import { AgenticAction, AgenticActionType } from '../models/agentic-action.model
 @Component({
   selector: 'app-agentic-actions',
   standalone: true,
-  imports: [CommonModule, IonicModule],
+  imports: [CommonModule, IonChip, IonIcon, IonButton],
   template: `
     <div class="agentic-actions-container" [class.expanded]="isExpanded">
       <!-- Main actions bar -->

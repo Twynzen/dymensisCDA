@@ -1,6 +1,6 @@
 import { Component, Input, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { IonicModule } from '@ionic/angular';
+import { IonIcon } from '@ionic/angular/standalone';
 import { Universe } from '../../../core/models';
 
 export interface LivePreviewData {
@@ -17,7 +17,7 @@ export interface LivePreviewData {
 @Component({
   selector: 'app-live-character-card',
   standalone: true,
-  imports: [CommonModule, IonicModule],
+  imports: [CommonModule, IonIcon],
   template: `
     <div class="live-card" [class.expanded]="isExpanded" (click)="toggleExpand()">
       <!-- Compact view (always visible) -->

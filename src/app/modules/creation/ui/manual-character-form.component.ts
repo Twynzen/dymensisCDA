@@ -1,7 +1,11 @@
 import { Component, Output, EventEmitter, inject, signal, OnInit, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { IonicModule, ModalController } from '@ionic/angular';
+import {
+  IonIcon, IonButton, IonCard, IonCardContent, IonChip, IonItem, IonInput, IonTextarea,
+  IonLabel, IonRange, IonBadge, IonNote,
+  ModalController
+} from '@ionic/angular/standalone';
 import { Character, Universe, Race, CharacterSkill } from '../../../core/models';
 import { UniverseStore } from '../../universes/data-access/universe.store';
 import { StatValidationService } from '../../../core/services';
@@ -12,7 +16,7 @@ import { SkillIconComponent, SkillIconName } from '../../../shared/ui/skill-icon
 @Component({
   selector: 'app-manual-character-form',
   standalone: true,
-  imports: [CommonModule, FormsModule, IonicModule, ImageUploadComponent, SkillIconComponent],
+  imports: [CommonModule, FormsModule, IonIcon, IonButton, IonCard, IonCardContent, IonChip, IonItem, IonInput, IonTextarea, IonLabel, IonRange, IonBadge, IonNote, ImageUploadComponent, SkillIconComponent],
   template: `
     <div class="form-container">
       <!-- Step indicator -->

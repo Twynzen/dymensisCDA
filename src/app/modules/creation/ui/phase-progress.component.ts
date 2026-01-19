@@ -1,6 +1,6 @@
 import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { IonicModule } from '@ionic/angular';
+import { IonIcon } from '@ionic/angular/standalone';
 
 export interface PhaseProgress {
   current: number;
@@ -12,7 +12,7 @@ export interface PhaseProgress {
 @Component({
   selector: 'app-phase-progress',
   standalone: true,
-  imports: [CommonModule, IonicModule],
+  imports: [CommonModule, IonIcon],
   template: `
     <div class="phase-progress-container">
       <div class="phase-info">

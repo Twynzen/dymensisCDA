@@ -1,14 +1,18 @@
 import { Component, Input, inject, signal, OnInit, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { IonicModule, ModalController } from '@ionic/angular';
+import {
+  IonHeader, IonToolbar, IonButtons, IonButton, IonTitle,
+  IonContent, IonItem, IonInput, IonTextarea, IonIcon,
+  ModalController
+} from '@ionic/angular/standalone';
 import { ImageUploadComponent } from '../../../shared/ui/image-upload/image-upload.component';
 import { Race, StatDefinition } from '../../../core/models';
 
 @Component({
   selector: 'app-race-editor-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule, IonicModule, ImageUploadComponent],
+  imports: [CommonModule, FormsModule, IonHeader, IonToolbar, IonButtons, IonButton, IonTitle, IonContent, IonItem, IonInput, IonTextarea, IonIcon, ImageUploadComponent],
   template: `
     <ion-header>
       <ion-toolbar>

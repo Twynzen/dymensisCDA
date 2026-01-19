@@ -2,7 +2,11 @@ import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { IonicModule, ToastController, AlertController } from '@ionic/angular';
+import {
+  IonHeader, IonToolbar, IonButtons, IonBackButton, IonTitle, IonButton, IonIcon, IonSpinner,
+  IonContent, IonListHeader, IonLabel, IonItem, IonInput, IonTextarea, IonSelect, IonSelectOption, IonBadge,
+  ToastController, AlertController
+} from '@ionic/angular/standalone';
 import { CharacterStore } from '../data-access/character.store';
 import { UniverseStore } from '../../universes/data-access/universe.store';
 import { FirebaseService } from '../../../core/services/firebase.service';
@@ -31,7 +35,7 @@ interface StatJustification {
 @Component({
   selector: 'app-character-editor',
   standalone: true,
-  imports: [CommonModule, FormsModule, IonicModule, StatBarComponent, ImageUploadComponent],
+  imports: [CommonModule, FormsModule, IonHeader, IonToolbar, IonButtons, IonBackButton, IonTitle, IonButton, IonIcon, IonSpinner, IonContent, IonListHeader, IonLabel, IonItem, IonInput, IonTextarea, IonSelect, IonSelectOption, IonBadge, StatBarComponent, ImageUploadComponent],
   template: `
     <ion-header>
       <ion-toolbar>

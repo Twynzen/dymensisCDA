@@ -1,12 +1,12 @@
 import { Component, Input, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { IonicModule } from '@ionic/angular';
+import { IonIcon } from '@ionic/angular/standalone';
 import { ChatMessage } from '../data-access/creation.store';
 
 @Component({
   selector: 'app-chat-message',
   standalone: true,
-  imports: [CommonModule, IonicModule],
+  imports: [CommonModule, IonIcon],
   template: `
     <div class="message-wrapper" [class.user]="isUser()" [class.assistant]="!isUser()">
       @if (!isUser()) {

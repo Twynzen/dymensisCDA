@@ -1,7 +1,12 @@
 import { Component, OnInit, inject, signal, computed, ViewChild, ElementRef, AfterViewChecked } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { IonicModule, AlertController } from '@ionic/angular';
+import {
+  IonHeader, IonToolbar, IonButtons, IonButton, IonIcon, IonTitle,
+  IonContent, IonChip, IonSpinner, IonLabel, IonSegment, IonSegmentButton,
+  IonCard, IonCardContent, IonNote, IonProgressBar, IonFooter, IonTextarea, IonToast,
+  AlertController
+} from '@ionic/angular/standalone';
 import { CreationStore } from '../data-access/creation.store';
 import { CreationService } from '../services/creation.service';
 import { ChatMessageComponent } from '../ui/chat-message.component';
@@ -35,7 +40,9 @@ export type CreationApproach = 'manual' | 'ai';
   imports: [
     CommonModule,
     FormsModule,
-    IonicModule,
+    IonHeader, IonToolbar, IonButtons, IonButton, IonIcon, IonTitle,
+    IonContent, IonChip, IonSpinner, IonLabel, IonSegment, IonSegmentButton,
+    IonCard, IonCardContent, IonNote, IonProgressBar, IonFooter, IonTextarea, IonToast,
     ChatMessageComponent,
     TypingIndicatorComponent,
     StreamingMessageComponent,

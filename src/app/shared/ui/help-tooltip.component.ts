@@ -1,6 +1,6 @@
 import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { IonicModule } from '@ionic/angular';
+import { IonButton, IonIcon, IonChip } from '@ionic/angular/standalone';
 
 /**
  * Example that can be clicked to insert into input
@@ -18,7 +18,7 @@ export interface HelpExample {
 @Component({
   selector: 'app-help-tooltip',
   standalone: true,
-  imports: [CommonModule, IonicModule],
+  imports: [CommonModule, IonButton, IonIcon, IonChip],
   template: `
     <div class="help-tooltip-container">
       <ion-button

@@ -1,7 +1,10 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
-import { IonicModule } from '@ionic/angular';
+import {
+  IonHeader, IonToolbar, IonTitle, IonButtons, IonButton, IonIcon,
+  IonContent, IonSpinner
+} from '@ionic/angular/standalone';
 import { FirebaseService } from '../../core/services/firebase.service';
 import { AuthService } from '../../core/services/auth.service';
 import { Universe } from '../../core/models';
@@ -10,7 +13,7 @@ import { QdtHudComponent } from '../../shared/ui/qdt-hud/qdt-hud.component';
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, IonicModule, RouterLink, QdtHudComponent],
+  imports: [CommonModule, IonHeader, IonToolbar, IonTitle, IonButtons, IonButton, IonIcon, IonContent, IonSpinner, RouterLink, QdtHudComponent],
   template: `
     <ion-header>
       <ion-toolbar>

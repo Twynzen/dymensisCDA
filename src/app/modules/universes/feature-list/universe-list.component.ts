@@ -1,7 +1,11 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
-import { IonicModule, AlertController, ActionSheetController } from '@ionic/angular';
+import {
+  IonHeader, IonToolbar, IonTitle, IonButtons, IonButton, IonIcon,
+  IonContent, IonRefresher, IonRefresherContent,
+  AlertController
+} from '@ionic/angular/standalone';
 import { UniverseStore } from '../data-access/universe.store';
 import { AuthService } from '../../../core/services/auth.service';
 import { fadeInAnimation } from '../../../shared/animations/stat-animations';
@@ -10,7 +14,7 @@ import { Universe } from '../../../core/models';
 @Component({
   selector: 'app-universe-list',
   standalone: true,
-  imports: [CommonModule, IonicModule],
+  imports: [CommonModule, IonHeader, IonToolbar, IonTitle, IonButtons, IonButton, IonIcon, IonContent, IonRefresher, IonRefresherContent],
   animations: [fadeInAnimation],
   template: `
     <ion-header class="qdt-header">

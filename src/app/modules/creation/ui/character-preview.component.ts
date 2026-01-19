@@ -1,12 +1,12 @@
 import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { IonicModule } from '@ionic/angular';
+import { IonIcon, IonChip, IonButton } from '@ionic/angular/standalone';
 import { Character } from '../../../core/models';
 
 @Component({
   selector: 'app-character-preview',
   standalone: true,
-  imports: [CommonModule, IonicModule],
+  imports: [CommonModule, IonIcon, IonChip, IonButton],
   template: `
     <div class="preview-card">
       <div class="preview-header">

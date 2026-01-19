@@ -1,14 +1,17 @@
 import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
-import { IonicModule } from '@ionic/angular';
+import {
+  IonHeader, IonToolbar, IonButtons, IonBackButton, IonTitle, IonButton, IonIcon,
+  IonContent
+} from '@ionic/angular/standalone';
 import { UniverseStore } from '../data-access/universe.store';
 import { Universe, StatDefinition } from '../../../core/models';
 
 @Component({
   selector: 'app-universe-detail',
   standalone: true,
-  imports: [CommonModule, IonicModule],
+  imports: [CommonModule, IonHeader, IonToolbar, IonButtons, IonBackButton, IonTitle, IonButton, IonIcon, IonContent],
   template: `
     <ion-header class="qdt-header">
       <ion-toolbar>

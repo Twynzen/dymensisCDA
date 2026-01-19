@@ -1,14 +1,19 @@
 import { Component, Input, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { IonicModule, ModalController, AlertController } from '@ionic/angular';
+import {
+  IonHeader, IonToolbar, IonButtons, IonButton, IonTitle,
+  IonContent, IonList, IonListHeader, IonLabel, IonItem, IonInput, IonTextarea, IonSelect, IonSelectOption,
+  IonIcon, IonNote, IonBadge, IonItemSliding, IonItemOptions, IonItemOption,
+  ModalController, AlertController
+} from '@ionic/angular/standalone';
 import { CharacterSkill, SkillEffect } from '../../../core/models';
 import { SkillIconComponent, SkillIconName } from '../../../shared/ui/skill-icon/skill-icon.component';
 
 @Component({
   selector: 'app-skill-editor-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule, IonicModule, SkillIconComponent],
+  imports: [CommonModule, FormsModule, IonHeader, IonToolbar, IonButtons, IonButton, IonTitle, IonContent, IonList, IonListHeader, IonLabel, IonItem, IonInput, IonTextarea, IonSelect, IonSelectOption, IonIcon, IonNote, IonBadge, IonItemSliding, IonItemOptions, IonItemOption, SkillIconComponent],
   template: `
     <ion-header>
       <ion-toolbar>

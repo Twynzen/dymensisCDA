@@ -1,12 +1,15 @@
 import { Component, inject } from '@angular/core';
 import { Router } from '@angular/router';
-import { IonicModule, AlertController } from '@ionic/angular';
+import {
+  IonTabs, IonTabBar, IonTabButton, IonIcon, IonLabel,
+  AlertController
+} from '@ionic/angular/standalone';
 import { AuthService } from '../../core/services/auth.service';
 
 @Component({
   selector: 'app-tabs',
   standalone: true,
-  imports: [IonicModule],
+  imports: [IonTabs, IonTabBar, IonTabButton, IonIcon, IonLabel],
   template: `
     <ion-tabs>
       <ion-tab-bar slot="bottom">

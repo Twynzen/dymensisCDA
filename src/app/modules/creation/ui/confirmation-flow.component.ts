@@ -1,6 +1,6 @@
 import { Component, Input, Output, EventEmitter, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { IonicModule } from '@ionic/angular';
+import { IonIcon, IonButton } from '@ionic/angular/standalone';
 import { Universe, Character, StatDefinition } from '../../../core/models';
 
 /**
@@ -20,7 +20,7 @@ export interface ValidationMessage {
 @Component({
   selector: 'app-confirmation-flow',
   standalone: true,
-  imports: [CommonModule, IonicModule],
+  imports: [CommonModule, IonIcon, IonButton],
   template: `
     <div class="confirmation-flow" [class.has-errors]="errors.length > 0">
       <!-- Header -->

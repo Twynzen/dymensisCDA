@@ -1,7 +1,12 @@
 import { Component, OnInit, ViewChild, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
-import { IonicModule, ToastController, LoadingController } from '@ionic/angular';
+import {
+  IonHeader, IonToolbar, IonButtons, IonBackButton, IonTitle,
+  IonContent, IonSpinner, IonListHeader, IonLabel, IonList, IonItem, IonIcon,
+  IonCard, IonCardHeader, IonCardTitle, IonCardContent,
+  ToastController, LoadingController
+} from '@ionic/angular/standalone';
 import { CharacterStore } from '../data-access/character.store';
 import { UniverseStore } from '../../universes/data-access/universe.store';
 import { ShareService } from '../../../core/services/share.service';
@@ -11,7 +16,7 @@ import { PrintableCardComponent } from '../../../shared/ui/printable-card/printa
 @Component({
   selector: 'app-character-share',
   standalone: true,
-  imports: [CommonModule, IonicModule, PrintableCardComponent],
+  imports: [CommonModule, IonHeader, IonToolbar, IonButtons, IonBackButton, IonTitle, IonContent, IonSpinner, IonListHeader, IonLabel, IonList, IonItem, IonIcon, IonCard, IonCardHeader, IonCardTitle, IonCardContent, PrintableCardComponent],
   template: `
     <ion-header>
       <ion-toolbar>

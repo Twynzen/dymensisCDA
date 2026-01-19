@@ -1,12 +1,12 @@
 import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { IonicModule } from '@ionic/angular';
+import { IonChip, IonIcon } from '@ionic/angular/standalone';
 import { QuickAction, isQuickAction, stringsToQuickActions } from '../models/quick-action.model';
 
 @Component({
   selector: 'app-quick-actions',
   standalone: true,
-  imports: [CommonModule, IonicModule],
+  imports: [CommonModule, IonChip, IonIcon],
   template: `
     <div class="quick-actions-container">
       <div class="actions-scroll">

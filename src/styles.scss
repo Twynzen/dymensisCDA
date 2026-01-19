@@ -163,10 +163,10 @@ body {
 /* Ion Content - Base background */
 ion-content {
   --background: var(--qdt-bg-primary);
-  --overflow: auto;
 
   &::part(scroll) {
     overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
   }
 }
 

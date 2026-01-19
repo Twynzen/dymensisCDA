@@ -1,7 +1,11 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
-import { IonicModule, AlertController, ActionSheetController } from '@ionic/angular';
+import {
+  IonHeader, IonToolbar, IonTitle, IonButtons, IonButton, IonIcon,
+  IonContent, IonRefresher, IonRefresherContent, IonToast,
+  AlertController, ActionSheetController
+} from '@ionic/angular/standalone';
 import { CharacterStore } from '../data-access/character.store';
 import { UniverseStore } from '../../universes/data-access/universe.store';
 import { CharacterCardComponent } from '../../../shared/ui/character-card/character-card.component';
@@ -10,7 +14,7 @@ import { fadeInAnimation } from '../../../shared/animations/stat-animations';
 @Component({
   selector: 'app-character-list',
   standalone: true,
-  imports: [CommonModule, IonicModule, CharacterCardComponent],
+  imports: [CommonModule, IonHeader, IonToolbar, IonTitle, IonButtons, IonButton, IonIcon, IonContent, IonRefresher, IonRefresherContent, IonToast, CharacterCardComponent],
   animations: [fadeInAnimation],
   template: `
     <ion-header class="qdt-header">

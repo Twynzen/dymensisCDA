@@ -1,11 +1,11 @@
 import { Component, Input, Output, EventEmitter, signal, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { IonicModule } from '@ionic/angular';
+import { IonIcon, IonButton, IonSpinner } from '@ionic/angular/standalone';
 
 @Component({
   selector: 'app-image-upload',
   standalone: true,
-  imports: [CommonModule, IonicModule],
+  imports: [CommonModule, IonIcon, IonButton, IonSpinner],
   template: `
     <div
       class="upload-zone"

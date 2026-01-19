@@ -1,7 +1,11 @@
 import { Component, Output, EventEmitter, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { IonicModule } from '@ionic/angular';
+import {
+  IonItem, IonInput, IonTextarea, IonSelect, IonSelectOption, IonToggle, IonIcon,
+  IonCard, IonCardContent, IonCardHeader, IonCardTitle, IonCardSubtitle,
+  IonChip, IonLabel, IonButton, IonList, IonRange
+} from '@ionic/angular/standalone';
 import { Universe, StatDefinition, ProgressionRule, AwakeningSystem, Race, RaceSystem, DEFAULT_INITIAL_POINTS } from '../../../core/models';
 import { ImageUploadComponent } from '../../../shared';
 
@@ -34,7 +38,12 @@ interface RaceEntry {
 @Component({
   selector: 'app-manual-universe-form',
   standalone: true,
-  imports: [CommonModule, FormsModule, IonicModule, ImageUploadComponent],
+  imports: [
+    CommonModule, FormsModule, ImageUploadComponent,
+    IonItem, IonInput, IonTextarea, IonSelect, IonSelectOption, IonToggle, IonIcon,
+    IonCard, IonCardContent, IonCardHeader, IonCardTitle, IonCardSubtitle,
+    IonChip, IonLabel, IonButton, IonList, IonRange
+  ],
   template: `
     <div class="form-container">
       <!-- Step indicator -->

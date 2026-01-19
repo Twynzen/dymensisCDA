@@ -2,7 +2,12 @@ import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { IonicModule, AlertController, ToastController } from '@ionic/angular';
+import {
+  IonHeader, IonToolbar, IonTitle, IonButtons, IonButton, IonIcon, IonContent,
+  IonProgressBar, IonChip, IonLabel, IonListHeader, IonItem, IonSelect, IonSelectOption,
+  IonTextarea, IonSpinner, IonCard, IonCardHeader, IonCardTitle, IonCardContent,
+  IonList, IonBadge, AlertController, ToastController
+} from '@ionic/angular/standalone';
 import { WebLLMService, AIAnalysisResult, StatSuggestion } from '../../../core/services/webllm.service';
 import { AIFallbackService, AIProvider } from '../../../core/services/ai-fallback.service';
 import { CharacterStore } from '../../characters/data-access/character.store';
@@ -12,7 +17,13 @@ import { fadeInAnimation } from '../../../shared/animations/stat-animations';
 @Component({
   selector: 'app-action-analyzer',
   standalone: true,
-  imports: [CommonModule, FormsModule, IonicModule],
+  imports: [
+    CommonModule, FormsModule,
+    IonHeader, IonToolbar, IonTitle, IonButtons, IonButton, IonIcon, IonContent,
+    IonProgressBar, IonChip, IonLabel, IonListHeader, IonItem, IonSelect, IonSelectOption,
+    IonTextarea, IonSpinner, IonCard, IonCardHeader, IonCardTitle, IonCardContent,
+    IonList, IonBadge
+  ],
   animations: [fadeInAnimation],
   template: `
     <ion-header>

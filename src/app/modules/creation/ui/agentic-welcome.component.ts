@@ -1,7 +1,7 @@
 import { Component, Input, Output, EventEmitter, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { IonicModule } from '@ionic/angular';
+import { IonIcon, IonTextarea, IonButton, IonChip, IonLabel } from '@ionic/angular/standalone';
 import { Universe } from '../../../core/models';
 import { HelpTooltipComponent, HelpExample } from '../../../shared/ui/help-tooltip.component';
 
@@ -23,7 +23,7 @@ export interface WelcomeOption {
 @Component({
   selector: 'app-agentic-welcome',
   standalone: true,
-  imports: [CommonModule, FormsModule, IonicModule, HelpTooltipComponent],
+  imports: [CommonModule, FormsModule, IonIcon, IonTextarea, IonButton, IonChip, IonLabel, HelpTooltipComponent],
   template: `
     <div class="agentic-welcome">
       <!-- Header with help -->

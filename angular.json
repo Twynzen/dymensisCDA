@@ -67,8 +67,8 @@
               "optimization": {
                 "scripts": true,
                 "styles": {
-                  "minify": false,
-                  "inlineCritical": false
+                  "minify": true,
+                  "inlineCritical": true
                 },
                 "fonts": true
               },

@@ -1,13 +1,13 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
-import { IonicModule } from '@ionic/angular';
+import { IonHeader, IonToolbar, IonTitle, IonContent, IonSpinner, IonIcon, IonButton } from '@ionic/angular/standalone';
 import { ShareService } from '../../core/services/share.service';
 
 @Component({
   selector: 'app-shared-view',
   standalone: true,
-  imports: [CommonModule, IonicModule],
+  imports: [CommonModule, IonHeader, IonToolbar, IonTitle, IonContent, IonSpinner, IonIcon, IonButton],
   template: `
     <ion-header>
       <ion-toolbar>

@@ -2,7 +2,10 @@ import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
-import { IonicModule, ToastController } from '@ionic/angular';
+import {
+  IonContent, IonIcon, IonSegment, IonSegmentButton, IonLabel, IonSpinner,
+  ToastController
+} from '@ionic/angular/standalone';
 import { AuthService } from '../../../core/services/auth.service';
 
 type AuthMode = 'login' | 'register';
@@ -10,7 +13,7 @@ type AuthMode = 'login' | 'register';
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule, FormsModule, IonicModule],
+  imports: [CommonModule, FormsModule, IonContent, IonIcon, IonSegment, IonSegmentButton, IonLabel, IonSpinner],
   template: `
     <ion-content class="login-content">
       <div class="login-container">

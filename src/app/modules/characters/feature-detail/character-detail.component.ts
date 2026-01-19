@@ -2,7 +2,11 @@ import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { IonicModule, ModalController, ToastController } from '@ionic/angular';
+import {
+  IonHeader, IonToolbar, IonButtons, IonBackButton, IonTitle, IonButton, IonIcon,
+  IonContent, IonFab, IonFabButton,
+  ModalController, ToastController
+} from '@ionic/angular/standalone';
 import { CharacterStore } from '../data-access/character.store';
 import { UniverseStore } from '../../universes/data-access/universe.store';
 import { StatBarComponent } from '../../../shared/ui/stat-bar/stat-bar.component';
@@ -15,7 +19,7 @@ import { SkillIconComponent, SkillIconName } from '../../../shared/ui/skill-icon
 @Component({
   selector: 'app-character-detail',
   standalone: true,
-  imports: [CommonModule, FormsModule, IonicModule, StatBarComponent, StatsRadarComponent, SkillIconComponent],
+  imports: [CommonModule, FormsModule, IonHeader, IonToolbar, IonButtons, IonBackButton, IonTitle, IonButton, IonIcon, IonContent, IonFab, IonFabButton, StatBarComponent, StatsRadarComponent, SkillIconComponent],
   animations: [fadeInAnimation, statChangeAnimation],
   template: `
     <ion-header class="qdt-header">
