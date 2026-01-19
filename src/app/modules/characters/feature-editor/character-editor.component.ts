@@ -5,6 +5,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { IonicModule, ToastController, AlertController } from '@ionic/angular';
 import { CharacterStore } from '../data-access/character.store';
 import { UniverseStore } from '../../universes/data-access/universe.store';
+import { FirebaseService } from '../../../core/services/firebase.service';
 import { StatBarComponent } from '../../../shared/ui/stat-bar/stat-bar.component';
 import { ImageUploadComponent } from '../../../shared/ui/image-upload/image-upload.component';
 import { Character, StatDefinition } from '../../../core/models';
@@ -176,7 +177,8 @@ interface StatJustification {
                     </span>
                     <ion-item class="justification-item">
                       <ion-textarea
-                        [(ngModel)]="justifications[stat.key]"
+                        [ngModel]="getJustification(stat.key)"
+                        (ngModelChange)="setJustification(stat.key, $event)"
                         [name]="'justification_' + stat.key"
                         label="¿Por qué cambia esta estadística?"
                         labelPlacement="floating"
@@ -234,10 +236,10 @@ interface StatJustification {
           </div>
         }
 
-        <!-- Save Button (visible when editing and can save) -->
-        @if (isEditing() && canSave()) {
+        <!-- Save Button (visible when editing) -->
+        @if (isEditing()) {
           <div class="save-section">
-            <ion-button expand="block" color="success" (click)="save()" [disabled]="saving()">
+            <ion-button expand="block" color="success" (click)="save()" [disabled]="!canSave() || saving()">
               @if (saving()) {
                 <ion-spinner name="crescent"></ion-spinner>
               } @else {
@@ -245,7 +247,9 @@ interface StatJustification {
                 Guardar Cambios
               }
             </ion-button>
-            @if (hasStatChanges()) {
+            @if (hasStatChanges() && !allJustificationsProvided()) {
+              <p class="save-hint warning">⚠️ Escribe la razón de cada cambio de estadística para poder guardar</p>
+            } @else if (hasStatChanges()) {
               <p class="save-hint">Se registrarán {{ changedStatsCount() }} cambio(s) de estadísticas con sus justificaciones</p>
             }
           </div>
@@ -471,6 +475,12 @@ interface StatJustification {
       margin: 8px 0 0 0;
     }
 
+    .save-hint.warning {
+      color: var(--ion-color-warning);
+      opacity: 1;
+      font-weight: 500;
+    }
+
     .danger-zone {
       padding: 16px;
       margin-top: 32px;
@@ -489,6 +499,7 @@ interface StatJustification {
 export class CharacterEditorComponent implements OnInit {
   characterStore = inject(CharacterStore);
   universeStore = inject(UniverseStore);
+  private firebaseService = inject(FirebaseService);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private toastController = inject(ToastController);
@@ -506,7 +517,7 @@ export class CharacterEditorComponent implements OnInit {
   backgroundColor = '#1a1a2e';
   stats = signal<Record<string, number>>({});
   originalStats = signal<Record<string, number>>({});
-  justifications: Record<string, string> = {};
+  justifications = signal<Record<string, string>>({});
   title = '';
 
   backUrl = computed(() =>
@@ -567,6 +578,14 @@ export class CharacterEditorComponent implements OnInit {
     return this.changedStatsCount() > 0;
   });
 
+  allJustificationsProvided = computed(() => {
+    if (!this.hasStatChanges()) return true;
+    const justifs = this.justifications();
+    return this.editableStats()
+      .filter(stat => this.statHasChanged(stat.key))
+      .every(stat => justifs[stat.key]?.trim());
+  });
+
   changedStatsCount = computed(() => {
     const current = this.stats();
     const original = this.originalStats();
@@ -584,10 +603,7 @@ export class CharacterEditorComponent implements OnInit {
 
     // If editing and stats changed, require justifications
     if (this.isEditing() && this.hasStatChanges()) {
-      const allJustified = this.editableStats()
-        .filter(stat => this.statHasChanged(stat.key))
-        .every(stat => this.justifications[stat.key]?.trim());
-      return nameValid && universeValid && statsExist && allJustified;
+      return nameValid && universeValid && statsExist && this.allJustificationsProvided();
     }
 
     return nameValid && universeValid && statsExist;
@@ -645,6 +661,14 @@ export class CharacterEditorComponent implements OnInit {
     return this.stats()[key] ?? 0;
   }
 
+  getJustification(key: string): string {
+    return this.justifications()[key] ?? '';
+  }
+
+  setJustification(key: string, value: string): void {
+    this.justifications.update(j => ({ ...j, [key]: value }));
+  }
+
   statHasChanged(key: string): boolean {
     return this.stats()[key] !== this.originalStats()[key];
   }
@@ -699,12 +723,13 @@ export class CharacterEditorComponent implements OnInit {
     try {
       if (this.isEditing()) {
         // Collect stat changes with justifications for history
+        const justifs = this.justifications();
         const statChanges = this.editableStats()
           .filter(stat => this.statHasChanged(stat.key))
           .map(stat => ({
             stat: stat.key,
             change: this.getStatChange(stat.key),
-            reason: this.justifications[stat.key]
+            reason: justifs[stat.key]
           }));
 
         await this.characterStore.updateCharacter(this.characterId()!, {
@@ -726,10 +751,17 @@ export class CharacterEditorComponent implements OnInit {
         // If there were stat changes, add to history
         if (statChanges.length > 0) {
           const userId = this.characterStore.selectedCharacter()?.ownerId;
-          if (userId) {
-            // Note: This would require adding the history entry through Firebase
-            // For now, we're just saving the character update
-            console.log('[CharacterEditor] Stat changes with justifications:', statChanges);
+          if (userId && this.characterId()) {
+            await this.firebaseService.addHistoryEntry(userId, this.characterId()!, {
+              action: 'Edición manual de estadísticas',
+              timestamp: new Date(),
+              aiAnalysis: {
+                suggestedChanges: statChanges,
+                confidence: 1
+              },
+              appliedChanges: statChanges,
+              approved: true
+            });
           }
         }
 
