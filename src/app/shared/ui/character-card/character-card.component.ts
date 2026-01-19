@@ -9,22 +9,10 @@ import { Character, StatDefinition } from '../../../core/models';
   imports: [CommonModule, IonicModule],
   template: `
     <div class="character-card" (click)="onCardClick()">
-      <!-- Corner brackets -->
-      <div class="corner-bracket top-left"></div>
-      <div class="corner-bracket top-right"></div>
-      <div class="corner-bracket bottom-left"></div>
-      <div class="corner-bracket bottom-right"></div>
-
-      <!-- Header badge -->
-      <div class="card-header-badge">
-        <span class="card-type">CHR</span>
-        <span class="card-id">{{ characterId() }}</span>
-      </div>
-
       <div class="card-content">
         <div class="avatar-section">
-          @if (avatarUrl()) {
-            <img [src]="avatarUrl()" class="avatar" alt="Avatar">
+          @if (_character()?.avatar?.photoUrl) {
+            <img [src]="_character()?.avatar?.photoUrl" class="avatar" alt="Avatar">
           } @else {
             <div class="avatar-placeholder">
               <ion-icon name="person-outline"></ion-icon>
@@ -348,11 +336,19 @@ export class CharacterCardComponent {
   @Output() cardClick = new EventEmitter<void>();
   @Output() moreClick = new EventEmitter<void>();
 
-  private _character = signal<Character | null>(null);
+  _character = signal<Character | null>(null);
   private _statDefinitions = signal<Record<string, StatDefinition>>({});
 
   characterName = computed(() => this._character()?.name ?? '');
-  avatarUrl = computed(() => this._character()?.avatar?.photoUrl ?? '');
+  avatarUrl = computed(() => {
+    const char = this._character();
+    if (!char) return '';
+    // Support both new format (avatar.photoUrl) and legacy formats (avatarUrl, imageUrl)
+    return char.avatar?.photoUrl
+      || (char as any).avatarUrl
+      || (char as any).imageUrl
+      || '';
+  });
   level = computed(() => this._character()?.progression?.level ?? 1);
   awakening = computed(() => this._character()?.progression?.awakening ?? 'E');
 
@@ -364,8 +360,22 @@ export class CharacterCardComponent {
   timestamp = computed(() => {
     const char = this._character();
     if (!char?.createdAt) return 'NO DATA';
-    const date = char.createdAt instanceof Date ? char.createdAt : new Date(char.createdAt);
-    return date.toISOString().slice(0, 10).replace(/-/g, '.');
+    try {
+      // Handle Firestore Timestamp, Date, or string
+      let date: Date;
+      if (char.createdAt instanceof Date) {
+        date = char.createdAt;
+      } else if ((char.createdAt as any)?.toDate) {
+        // Firestore Timestamp
+        date = (char.createdAt as any).toDate();
+      } else {
+        date = new Date(char.createdAt as any);
+      }
+      if (isNaN(date.getTime())) return 'NO DATA';
+      return date.toISOString().slice(0, 10).replace(/-/g, '.');
+    } catch {
+      return 'NO DATA';
+    }
   });
 
   topStats = computed(() => {
