@@ -96,8 +96,8 @@ import { Race, StatDefinition } from '../../../core/models';
         <div class="stats-grid">
           @for (statKey of statKeys; track statKey) {
             <div class="stat-input-group">
-              <div class="stat-label" [style.color]="statDefinitions[statKey]?.color">
-                {{ statDefinitions[statKey]?.abbreviation || statKey }}
+              <div class="stat-label" [style.color]="statDefinitions[statKey].color">
+                {{ statDefinitions[statKey].abbreviation || statKey }}
               </div>
               <div class="stat-controls">
                 <ion-button

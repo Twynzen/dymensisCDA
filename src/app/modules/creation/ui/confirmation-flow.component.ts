@@ -62,11 +62,11 @@ export interface ValidationMessage {
             </div>
 
             <!-- Rank System -->
-            @if (universe.awakeningSystem?.enabled) {
+            @if (universe.awakeningSystem?.enabled && universe.awakeningSystem?.levels) {
               <div class="detail-section">
                 <h3><ion-icon name="trophy-outline"></ion-icon> Sistema de Rangos</h3>
                 <div class="ranks-row">
-                  @for (rank of universe.awakeningSystem.levels; track rank) {
+                  @for (rank of universe.awakeningSystem!.levels; track rank) {
                     <span class="rank-badge">{{ rank }}</span>
                   }
                 </div>
@@ -74,10 +74,10 @@ export interface ValidationMessage {
             }
 
             <!-- Progression Rules -->
-            @if (universe.progressionRules?.length) {
+            @if (universe.progressionRules && universe.progressionRules.length > 0) {
               <div class="detail-section">
                 <h3><ion-icon name="trending-up-outline"></ion-icon> Reglas de Progresión</h3>
-                <p class="detail-info">{{ universe.progressionRules.length }} reglas configuradas</p>
+                <p class="detail-info">{{ universe.progressionRules!.length }} reglas configuradas</p>
               </div>
             }
 
@@ -93,7 +93,7 @@ export interface ValidationMessage {
         @if (entityType === 'personaje' && character) {
           <div class="entity-header">
             @if (character.avatar?.photoUrl) {
-              <div class="avatar-image" [style.backgroundImage]="'url(' + character.avatar.photoUrl + ')'"></div>
+              <div class="avatar-image" [style.backgroundImage]="'url(' + character.avatar!.photoUrl + ')'"></div>
             } @else {
               <div class="avatar-placeholder" [style.backgroundColor]="character.avatar?.backgroundColor || '#6366f1'">
                 {{ getCharacterInitials() }}
