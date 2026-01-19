@@ -9,6 +9,7 @@ import {
   planet,
   planetOutline,
   sparkles,
+  sparklesOutline,
   create,
   createOutline,
   trash,
@@ -22,6 +23,7 @@ import {
   close,
   checkmark,
   checkmarkCircle,
+  checkmarkCircleOutline,
   alertCircle,
   alertCircleOutline,
   informationCircle,
@@ -73,7 +75,9 @@ import {
   image,
   imageOutline,
   book,
-  bookOutline
+  bookOutline,
+  speedometer,
+  speedometerOutline
 } from 'ionicons/icons';
 
 @Component({
@@ -160,7 +164,11 @@ export class AppComponent {
       image,
       'image-outline': imageOutline,
       book,
-      'book-outline': bookOutline
+      'book-outline': bookOutline,
+      speedometer,
+      'speedometer-outline': speedometerOutline,
+      'sparkles-outline': sparklesOutline,
+      'checkmark-circle-outline': checkmarkCircleOutline
     });
   }
 }

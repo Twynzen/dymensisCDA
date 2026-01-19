@@ -2,40 +2,84 @@ import { Injectable, inject } from '@angular/core';
 import { Universe, Character } from '../../../core/models';
 import { UniverseStore } from '../../universes/data-access/universe.store';
 
+// Logger prefix for filtering
+const LOG_PREFIX = '[RagContext]';
+
 @Injectable({ providedIn: 'root' })
 export class RagContextService {
   private universeStore = inject(UniverseStore);
+
+  // Logging helpers
+  private log(message: string, data?: unknown): void {
+    console.log(`${LOG_PREFIX} ${message}`, data !== undefined ? data : '');
+  }
 
   /**
    * Conocimiento base sobre el sistema completo
    */
   getSystemKnowledge(): string {
-    return `
-###CONOCIMIENTO DEL SISTEMA - DYMENSIS CDA###
+    this.log(`Building system knowledge prompt...`);
+    const prompt = `Eres un asistente de creación de RPG inteligente y eficiente.
 
-Eres un asistente de creación para Dymensis CDA, un sistema de gestión de personajes RPG.
-Tu rol es guiar al usuario en la creación de universos y personajes de forma conversacional.
+REGLAS CRÍTICAS:
+1. MÁXIMO 2-3 oraciones por respuesta
+2. Si el usuario da MUCHA información, reconócelo y extrae TODO
+3. Si el usuario da poca info, haz UNA pregunta específica
+4. Sé conversacional pero eficiente
+5. Adapta tu respuesta al nivel de detalle que da el usuario
 
-###CAPACIDADES###
-1. Crear universos con reglas de progresión personalizadas
-2. Crear personajes dentro de universos existentes
-3. Analizar acciones para ajustar estadísticas de personajes
-4. Procesar imágenes que el usuario suba (avatares, escenarios, presentaciones)
+COMPORTAMIENTO AGENTIC:
+- Si el usuario describe todo de una vez (nombre, stats, rangos, etc.): "¡Excelente! Ya tengo [lista]. Solo falta [campo]. ¿Cómo funciona?"
+- Si el usuario da solo un concepto: Pregunta lo más importante que falta
+- Si hay suficiente info (>50%): Ofrece generar un preview
 
-###MANEJO DE IMÁGENES###
-Cuando el usuario suba una imagen, DEBES preguntar su propósito:
-- "¿Esta imagen es para un PERSONAJE (avatar), un LUGAR del universo, o la PRESENTACIÓN del universo?"
-- Según la respuesta, asignarás la imagen al campo correcto:
-  * Avatar de personaje → character.avatar.photoUrl
-  * Lugar del universo → universe.locations[].imageUrl
-  * Presentación del universo → universe.coverImage
+EXTRACCIÓN MASIVA - Busca estos patrones:
+- Nombre: "llamado X", "nombre: X", "X" (entre comillas)
+- Tema: "fantasía", "sci-fi", "cyberpunk", etc.
+- Stats: Lista de palabras (fuerza, agilidad, etc.)
+- Rangos: "E a SSS", "niveles 1-100", "Solo Leveling style"
+- Puntos: "X puntos para repartir"
 
-###ESTILO DE CONVERSACIÓN###
-- Sé amigable y entusiasta, como un Game Master guiando a un jugador
-- Haz preguntas específicas para obtener detalles
-- Ofrece sugerencias creativas basadas en lo que el usuario describe
-- Confirma entendimiento antes de generar contenido final
-`;
+PRIORIDADES DE PREGUNTAS:
+1. Nombre (si no lo tiene)
+2. Tema/Concepto (si no lo tiene)
+3. Stats (si es universo)
+4. Sistema de rangos (opcional pero importante)
+
+NUNCA repitas información que ya tienes. Sé conciso.`;
+    this.log(`System knowledge prompt built (${prompt.length} chars)`);
+    return prompt;
+  }
+
+  /**
+   * Prompt especializado para extracción masiva (agentic mode)
+   */
+  getAgenticExtractionPrompt(currentData: Record<string, any>, completenessPercent: number): string {
+    return `MODO AGENTIC - Extracción Inteligente
+
+DATOS ACTUALES (${completenessPercent}% completado):
+${JSON.stringify(currentData, null, 2)}
+
+INSTRUCCIONES:
+${completenessPercent < 30 ? `
+- El usuario recién empieza. Extrae lo que puedas y pregunta lo esencial.
+- Prioriza: nombre y concepto básico.
+` : completenessPercent < 70 ? `
+- Tienes bastante info. Enfócate en lo que falta.
+- Pregunta sobre stats o rangos si no los tiene.
+- Ofrece generar preview si quiere.
+` : `
+- ¡Casi completo! Sugiere ir al preview.
+- Solo pregunta si hay algo crítico que falta.
+- Puedes generar el JSON si el usuario lo pide.
+`}
+
+FORMATO DE RESPUESTA:
+- Reconoce brevemente lo que extrajiste (si hay algo nuevo)
+- Haz UNA pregunta sobre lo que falta (si aplica)
+- O sugiere el siguiente paso (preview, guardar)
+
+MÁXIMO 3 oraciones.`;
   }
 
   /**
@@ -142,7 +186,10 @@ ${examplesSection}
    * Conocimiento para crear personajes
    */
   getCharacterCreationKnowledge(universe?: Universe): string {
+    this.log(`Building character creation knowledge...`);
+    this.log(`Universe provided: ${universe ? universe.name : 'none'}`);
     const availableUniverses = this.universeStore.allUniverses();
+    this.log(`Available universes: ${availableUniverses.length}`);
 
     let universeSection = '';
     if (universe) {

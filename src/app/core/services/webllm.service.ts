@@ -24,6 +24,9 @@ export interface WebGPUStatus {
   reason?: string;
 }
 
+// Logger prefix for filtering
+const LOG_PREFIX = '[WebLLM]';
+
 @Injectable({ providedIn: 'root' })
 export class WebLLMService {
   private engine: webllm.MLCEngineInterface | null = null;
@@ -36,6 +39,17 @@ export class WebLLMService {
   error = signal<string | null>(null);
 
   private readonly MODEL_ID = 'Phi-3-mini-4k-instruct-q4f16_1-MLC-1k';
+
+  // Logging helpers
+  private log(message: string, data?: unknown): void {
+    console.log(`${LOG_PREFIX} ${message}`, data !== undefined ? data : '');
+  }
+  private logWarn(message: string, data?: unknown): void {
+    console.warn(`${LOG_PREFIX} ⚠️ ${message}`, data !== undefined ? data : '');
+  }
+  private logError(message: string, data?: unknown): void {
+    console.error(`${LOG_PREFIX} ❌ ${message}`, data !== undefined ? data : '');
+  }
 
   private readonly FEW_SHOT_EXAMPLES = `
 ###EJEMPLO 1 - Entrenamiento Físico###
@@ -91,13 +105,24 @@ Acción: "Estudié grimorios antiguos toda la noche."
   }
 
   async initialize(): Promise<void> {
+    this.log(`========== INITIALIZING MODEL ==========`);
+    this.log(`Model ID: ${this.MODEL_ID}`);
+
     const gpuCheck = await this.checkWebGPUSupport();
+    this.log(`WebGPU supported: ${gpuCheck.supported}`);
     if (!gpuCheck.supported) {
+      this.logError(`WebGPU not supported: ${gpuCheck.reason}`);
       this.error.set(gpuCheck.reason ?? 'WebGPU no soportado');
       throw new Error(gpuCheck.reason);
     }
 
-    if (this.isReady() || this.isLoading()) {
+    if (this.isReady()) {
+      this.log(`Model already ready - skipping initialization`);
+      return;
+    }
+
+    if (this.isLoading()) {
+      this.log(`Model already loading - skipping`);
       return;
     }
 
@@ -107,17 +132,28 @@ Acción: "Estudié grimorios antiguos toda la noche."
     this.loadingText.set('Iniciando descarga del modelo...');
 
     try {
+      this.log(`Creating MLC Engine...`);
+      const startTime = Date.now();
+
       this.engine = await webllm.CreateMLCEngine(this.MODEL_ID, {
         initProgressCallback: (progress) => {
-          this.loadingProgress.set(Math.round(progress.progress * 100));
+          const percent = Math.round(progress.progress * 100);
+          this.loadingProgress.set(percent);
           this.loadingText.set(progress.text);
+          // Log every 10%
+          if (percent % 10 === 0) {
+            this.log(`Loading: ${percent}% - ${progress.text}`);
+          }
         }
       });
 
+      const elapsed = Date.now() - startTime;
+      this.log(`Model loaded successfully in ${elapsed}ms`);
       this.isReady.set(true);
       this.loadingText.set('Modelo listo');
     } catch (e) {
       const errorMessage = `Error inicializando modelo: ${e instanceof Error ? e.message : String(e)}`;
+      this.logError(`Initialization failed:`, e);
       this.error.set(errorMessage);
       throw new Error(errorMessage);
     } finally {
@@ -164,17 +200,172 @@ Acción: "Estudié grimorios antiguos toda la noche."
   }
 
   async chat(messages: ChatMessage[]): Promise<string> {
+    this.log(`========== CHAT REQUEST ==========`);
+    this.log(`Total messages: ${messages.length}`);
+
+    if (!this.engine) {
+      this.logError(`Engine not initialized!`);
+      throw new Error('El motor de IA no está inicializado');
+    }
+
+    // Log each message summary
+    messages.forEach((msg, i) => {
+      const preview = msg.content.substring(0, 150).replace(/\n/g, ' ');
+      this.log(`  [${i}] ${msg.role}: "${preview}${msg.content.length > 150 ? '...' : ''}" (${msg.content.length} chars)`);
+    });
+
+    // Calculate total tokens estimate (rough: 4 chars per token)
+    const totalChars = messages.reduce((sum, m) => sum + m.content.length, 0);
+    const estimatedTokens = Math.ceil(totalChars / 4);
+    this.log(`Estimated input tokens: ~${estimatedTokens}`);
+
+    if (estimatedTokens > 3000) {
+      this.logWarn(`Input may be too long for model context window!`);
+    }
+
+    this.log(`🧠 Starting generation (streaming mode)...`);
+    const startTime = Date.now();
+    let tokenCount = 0;
+    let content = '';
+    let lastLogTime = startTime;
+    let lastTokenCount = 0;
+
+    try {
+      // Use streaming to see tokens as they're generated
+      // max_tokens reducido para forzar respuestas cortas
+      const stream = await this.engine.chat.completions.create({
+        messages,
+        temperature: 0.6, // Un poco menos de creatividad para ser más directo
+        max_tokens: 150,  // Máximo ~3-4 oraciones
+        stream: true // Enable streaming!
+      });
+
+      this.log(`🧠 Stream started - generating tokens...`);
+
+      for await (const chunk of stream) {
+        const delta = chunk.choices[0]?.delta?.content || '';
+        if (delta) {
+          content += delta;
+          tokenCount++;
+
+          // Log progress every 500ms or every 20 tokens
+          const now = Date.now();
+          if (now - lastLogTime >= 500 || tokenCount - lastTokenCount >= 20) {
+            const elapsed = (now - startTime) / 1000;
+            const tokensPerSec = tokenCount / elapsed;
+            const preview = content.slice(-50).replace(/\n/g, ' ');
+
+            this.log(`🧠 [${tokenCount} tokens | ${tokensPerSec.toFixed(1)} tok/s | ${elapsed.toFixed(1)}s] ...${preview}`);
+
+            lastLogTime = now;
+            lastTokenCount = tokenCount;
+          }
+        }
+      }
+
+      const elapsed = Date.now() - startTime;
+      const tokensPerSecond = tokenCount / (elapsed / 1000);
+
+      this.log(`✅ Generation complete!`);
+      this.log(`   📊 Total tokens: ${tokenCount}`);
+      this.log(`   ⏱️ Time: ${elapsed}ms (${(elapsed/1000).toFixed(2)}s)`);
+      this.log(`   🚀 Speed: ${tokensPerSecond.toFixed(2)} tokens/sec`);
+      this.log(`   📝 Response length: ${content.length} chars`);
+
+      // Try to get runtime stats from engine
+      try {
+        const stats = await this.engine.runtimeStatsText();
+        if (stats) {
+          this.log(`   📈 Runtime stats:`);
+          stats.split('\n').filter(line => line.trim()).forEach(line => {
+            this.log(`      ${line.trim()}`);
+          });
+        }
+      } catch {
+        // Stats not available, skip
+      }
+
+      this.log(`   📄 Full response:`);
+      // Log full response in chunks for readability
+      const lines = content.split('\n');
+      lines.forEach((line, i) => {
+        if (line.trim()) {
+          this.log(`      ${i + 1}: ${line}`);
+        }
+      });
+
+      // Check for common issues
+      if (content.includes('###') && content.includes('CONOCIMIENTO')) {
+        this.logWarn(`⚠️ Response may contain leaked system prompt!`);
+        this.logWarn(`⚠️ This indicates the model is confused and repeating instructions`);
+      }
+
+      if (content.length < 10) {
+        this.logWarn(`⚠️ Response suspiciously short`);
+      }
+
+      this.log(`========== CHAT COMPLETE ==========`);
+      return content;
+
+    } catch (error) {
+      this.logError(`Chat completion failed:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Chat with streaming callback for real-time UI updates
+   */
+  async chatWithStreaming(
+    messages: ChatMessage[],
+    onToken: (token: string, fullContent: string) => void
+  ): Promise<string> {
+    this.log(`========== STREAMING CHAT REQUEST ==========`);
+    this.log(`Messages count: ${messages.length}`);
+
+    // Log each message for debugging
+    messages.forEach((msg, i) => {
+      const preview = msg.content.substring(0, 200).replace(/\n/g, '\\n');
+      this.log(`[${i}] ${msg.role.toUpperCase()}: "${preview}${msg.content.length > 200 ? '...' : ''}" (${msg.content.length} chars)`);
+    });
+
     if (!this.engine) {
       throw new Error('El motor de IA no está inicializado');
     }
 
-    const response = await this.engine.chat.completions.create({
-      messages,
-      temperature: 0.7,
-      max_tokens: 1000
-    });
+    const startTime = Date.now();
+    let tokenCount = 0;
+    let content = '';
 
-    return response.choices[0]?.message?.content || '';
+    try {
+      // IMPORTANTE: max_tokens reducido para forzar respuestas CORTAS
+      // El modelo Phi-3 mini tiende a divagar con valores altos
+      const stream = await this.engine.chat.completions.create({
+        messages,
+        temperature: 0.6, // Más bajo = más consistente
+        max_tokens: 150,  // Máximo ~2-3 oraciones cortas
+        stream: true
+      });
+      this.log(`Stream started with max_tokens=150, temperature=0.6`);
+
+      for await (const chunk of stream) {
+        const delta = chunk.choices[0]?.delta?.content || '';
+        if (delta) {
+          content += delta;
+          tokenCount++;
+          onToken(delta, content);
+        }
+      }
+
+      const elapsed = Date.now() - startTime;
+      this.log(`Streaming complete: ${tokenCount} tokens in ${elapsed}ms`);
+
+      return content;
+
+    } catch (error) {
+      this.logError(`Streaming chat failed:`, error);
+      throw error;
+    }
   }
 
   private buildSystemPrompt(rules: ProgressionRule[]): string {

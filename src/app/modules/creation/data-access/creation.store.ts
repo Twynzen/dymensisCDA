@@ -1,5 +1,6 @@
 import { computed, Injectable, signal } from '@angular/core';
 import { Universe, Character } from '../../../core/models';
+import { DynamicPhaseState, AgenticAction } from '../models/agentic-action.model';
 
 export interface ChatMessage {
   id: string;
@@ -24,6 +25,24 @@ export class CreationStore {
   private _suggestedActions = signal<string[]>([]);
   private _conversationContext = signal<Record<string, any>>({});
 
+  // Streaming state signals
+  private _streamingMessage = signal<string | null>(null);
+  private _isStreaming = signal(false);
+  private _streamingSpeed = signal(0);
+  private _streamingStartTime: number | null = null;
+  private _streamingTokenCount = 0;
+
+  // Agentic mode signals
+  private _dynamicPhaseState = signal<DynamicPhaseState | null>(null);
+  private _visibleActions = signal<AgenticAction[]>([]);
+  private _confirmationMode = signal(false);
+  private _extractionProgress = signal<number>(0);
+  private _availableUniverses = signal<Universe[]>([]);
+  private _validationWarnings = signal<string[]>([]);
+  private _validationErrors = signal<string[]>([]);
+  private _lastUserMessage = signal<string>('');
+  private _agenticWelcomeShown = signal(false);
+
   // Public computed signals
   mode = computed(() => this._mode());
   phase = computed(() => this._phase());
@@ -34,6 +53,34 @@ export class CreationStore {
   selectedUniverseId = computed(() => this._selectedUniverseId());
   suggestedActions = computed(() => this._suggestedActions());
   conversationContext = computed(() => this._conversationContext());
+
+  // Streaming computed signals
+  streamingMessage = computed(() => this._streamingMessage());
+  isStreaming = computed(() => this._isStreaming());
+  streamingSpeed = computed(() => this._streamingSpeed());
+
+  // Agentic mode computed signals
+  dynamicPhaseState = computed(() => this._dynamicPhaseState());
+  visibleActions = computed(() => this._visibleActions());
+  confirmationMode = computed(() => this._confirmationMode());
+  extractionProgress = computed(() => this._extractionProgress());
+  availableUniverses = computed(() => this._availableUniverses());
+  validationWarnings = computed(() => this._validationWarnings());
+  validationErrors = computed(() => this._validationErrors());
+  lastUserMessage = computed(() => this._lastUserMessage());
+  agenticWelcomeShown = computed(() => this._agenticWelcomeShown());
+
+  // Computed: whether confirmation is ready (no errors)
+  canConfirm = computed(() =>
+    this._confirmationMode() &&
+    this._validationErrors().length === 0 &&
+    (this._generatedUniverse() !== null || this._generatedCharacter() !== null)
+  );
+
+  // Computed: completeness percentage
+  completenessScore = computed(() =>
+    this._dynamicPhaseState()?.completenessScore || 0
+  );
 
   // Computed derived state
   hasGeneratedContent = computed(() =>
@@ -113,6 +160,71 @@ export class CreationStore {
     this._selectedUniverseId.set(null);
     this._suggestedActions.set([]);
     this._conversationContext.set({});
+    // Reset agentic mode state
+    this._dynamicPhaseState.set(null);
+    this._visibleActions.set([]);
+    this._confirmationMode.set(false);
+    this._extractionProgress.set(0);
+    this._validationWarnings.set([]);
+    this._validationErrors.set([]);
+    this._lastUserMessage.set('');
+    this._agenticWelcomeShown.set(false);
+  }
+
+  // ============================================
+  // AGENTIC MODE ACTIONS
+  // ============================================
+
+  setDynamicPhaseState(state: DynamicPhaseState | null): void {
+    this._dynamicPhaseState.set(state);
+  }
+
+  setVisibleActions(actions: AgenticAction[]): void {
+    this._visibleActions.set(actions);
+  }
+
+  setConfirmationMode(value: boolean): void {
+    this._confirmationMode.set(value);
+  }
+
+  setExtractionProgress(value: number): void {
+    this._extractionProgress.set(value);
+  }
+
+  setAvailableUniverses(universes: Universe[]): void {
+    this._availableUniverses.set(universes);
+  }
+
+  setValidationWarnings(warnings: string[]): void {
+    this._validationWarnings.set(warnings);
+  }
+
+  setValidationErrors(errors: string[]): void {
+    this._validationErrors.set(errors);
+  }
+
+  setLastUserMessage(message: string): void {
+    this._lastUserMessage.set(message);
+  }
+
+  setAgenticWelcomeShown(value: boolean): void {
+    this._agenticWelcomeShown.set(value);
+  }
+
+  // Convenience method to enter confirmation mode with validation
+  enterConfirmationMode(warnings: string[] = [], errors: string[] = []): void {
+    this._confirmationMode.set(true);
+    this._validationWarnings.set(warnings);
+    this._validationErrors.set(errors);
+    this._phase.set('reviewing');
+  }
+
+  // Exit confirmation mode
+  exitConfirmationMode(): void {
+    this._confirmationMode.set(false);
+    this._validationWarnings.set([]);
+    this._validationErrors.set([]);
+    this._phase.set('adjusting');
   }
 
   // Serialize conversation for AI context
@@ -121,5 +233,55 @@ export class CreationStore {
       role: m.role,
       content: m.content
     }));
+  }
+
+  // Streaming actions
+  startStreaming(): void {
+    this._isStreaming.set(true);
+    this._streamingMessage.set('');
+    this._streamingSpeed.set(0);
+    this._streamingStartTime = Date.now();
+    this._streamingTokenCount = 0;
+  }
+
+  appendStreamingToken(token: string): void {
+    this._streamingMessage.update(current => (current ?? '') + token);
+    this._streamingTokenCount++;
+
+    // Update speed every 10 tokens
+    if (this._streamingTokenCount % 10 === 0 && this._streamingStartTime) {
+      const elapsed = (Date.now() - this._streamingStartTime) / 1000;
+      if (elapsed > 0) {
+        this._streamingSpeed.set(Math.round(this._streamingTokenCount / elapsed));
+      }
+    }
+  }
+
+  updateStreamingSpeed(tokensPerSec: number): void {
+    this._streamingSpeed.set(Math.round(tokensPerSec));
+  }
+
+  finishStreaming(): void {
+    const finalContent = this._streamingMessage();
+    if (finalContent) {
+      // Add the completed message to the messages array
+      this.addMessage({
+        role: 'assistant',
+        content: finalContent
+      });
+    }
+    this._isStreaming.set(false);
+    this._streamingMessage.set(null);
+    this._streamingSpeed.set(0);
+    this._streamingStartTime = null;
+    this._streamingTokenCount = 0;
+  }
+
+  cancelStreaming(): void {
+    this._isStreaming.set(false);
+    this._streamingMessage.set(null);
+    this._streamingSpeed.set(0);
+    this._streamingStartTime = null;
+    this._streamingTokenCount = 0;
   }
 }

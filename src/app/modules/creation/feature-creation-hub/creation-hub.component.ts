@@ -6,17 +6,23 @@ import { CreationStore } from '../data-access/creation.store';
 import { CreationService } from '../services/creation.service';
 import { ChatMessageComponent } from '../ui/chat-message.component';
 import { TypingIndicatorComponent } from '../ui/typing-indicator.component';
+import { StreamingMessageComponent } from '../ui/streaming-message.component';
 import { UniversePreviewComponent } from '../ui/universe-preview.component';
 import { CharacterPreviewComponent } from '../ui/character-preview.component';
 import { QuickActionsComponent } from '../ui/quick-actions.component';
 import { PhaseProgressComponent } from '../ui/phase-progress.component';
 import { ManualUniverseFormComponent } from '../ui/manual-universe-form.component';
 import { ManualCharacterFormComponent } from '../ui/manual-character-form.component';
+import { AgenticWelcomeComponent, WelcomeOption } from '../ui/agentic-welcome.component';
+import { AgenticActionsComponent } from '../ui/agentic-actions.component';
+import { ConfirmationFlowComponent, ValidationMessage } from '../ui/confirmation-flow.component';
+import { HelpTooltipComponent, HelpExample } from '../../../shared/ui/help-tooltip.component';
 import { WebLLMService } from '../../../core/services/webllm.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { UniverseStore } from '../../universes/data-access/universe.store';
 import { CharacterStore } from '../../characters/data-access/character.store';
 import { Universe, Character, CharacterSkill } from '../../../core/models';
+import { AgenticAction } from '../models/agentic-action.model';
 
 export type CreationMode = 'idle' | 'universe' | 'character' | 'action';
 export type CreationApproach = 'manual' | 'ai';
@@ -30,12 +36,17 @@ export type CreationApproach = 'manual' | 'ai';
     IonicModule,
     ChatMessageComponent,
     TypingIndicatorComponent,
+    StreamingMessageComponent,
     UniversePreviewComponent,
     CharacterPreviewComponent,
     QuickActionsComponent,
     PhaseProgressComponent,
     ManualUniverseFormComponent,
-    ManualCharacterFormComponent
+    ManualCharacterFormComponent,
+    AgenticWelcomeComponent,
+    AgenticActionsComponent,
+    ConfirmationFlowComponent,
+    HelpTooltipComponent
   ],
   template: `
     <ion-header>
@@ -120,6 +131,11 @@ export type CreationApproach = 'manual' | 'ai';
                     <ion-label>Modelo IA listo</ion-label>
                   </ion-chip>
                   <p>La IA te guiará con una conversación natural para crear contenido personalizado.</p>
+                  <ion-note color="warning" class="experimental-warning">
+                    <ion-icon name="warning-outline"></ion-icon>
+                    <strong>Experimental:</strong> Esta funcion usa IA local y esta en desarrollo activo.
+                    Es posible que las respuestas no siempre sean las esperadas.
+                  </ion-note>
                 } @else {
                   <ion-chip color="warning">
                     <ion-icon name="alert-circle"></ion-icon>
@@ -202,45 +218,108 @@ export type CreationApproach = 'manual' | 'ai';
         }
       } @else {
         <!-- Modo IA (Chat conversacional) -->
-        <div class="chat-container">
-          @for (message of creationStore.messages(); track message.id) {
-            <app-chat-message
-              [message]="message"
-              [isTyping]="false"
-            ></app-chat-message>
-          }
 
-          @if (creationStore.isGenerating()) {
-            <app-typing-indicator></app-typing-indicator>
-          }
+        <!-- Agentic Welcome Screen (when idle in AI mode) -->
+        @if (creationStore.mode() === 'idle' && !creationStore.agenticWelcomeShown()) {
+          <app-agentic-welcome
+            [availableUniverses]="universeStore.allUniverses()"
+            [showUniverseSelection]="false"
+            (optionSelected)="onAgenticOptionSelected($event)"
+            (freeInputSubmitted)="onAgenticFreeInput($event)"
+            (universeSelected)="onUniverseSelectedForCharacter($event)"
+            (exampleInserted)="onExampleInserted($event)"
+          ></app-agentic-welcome>
+        } @else {
+          <!-- Chat Interface -->
+          <div class="chat-container">
+            @for (message of creationStore.messages(); track message.id) {
+              <app-chat-message
+                [message]="message"
+                [isTyping]="false"
+              ></app-chat-message>
+            }
 
-          @if (creationStore.generatedUniverse()) {
-            <app-universe-preview
-              [universe]="creationStore.generatedUniverse()!"
-              (confirm)="confirmUniverse()"
-              (adjust)="requestAdjustment('universe')"
-              (regenerate)="regenerate()"
-            ></app-universe-preview>
-          }
+            <!-- Mensaje en streaming -->
+            @if (creationStore.isStreaming()) {
+              <app-streaming-message
+                [content]="creationStore.streamingMessage()"
+                [speed]="creationStore.streamingSpeed()"
+              ></app-streaming-message>
+            }
 
-          @if (creationStore.generatedCharacter()) {
-            <app-character-preview
-              [character]="creationStore.generatedCharacter()!"
-              (confirm)="confirmCharacter()"
-              (adjust)="requestAdjustment('character')"
-              (regenerate)="regenerate()"
-            ></app-character-preview>
-          }
+            @if (creationStore.isGenerating() && !creationStore.isStreaming()) {
+              <app-typing-indicator></app-typing-indicator>
+            }
 
-          <div class="scroll-anchor" #scrollAnchor></div>
-        </div>
+            <!-- Confirmation Flow (replaces individual previews) -->
+            @if (creationStore.confirmationMode()) {
+              <app-confirmation-flow
+                [entityType]="creationStore.mode() === 'universe' ? 'universo' : 'personaje'"
+                [universe]="creationStore.generatedUniverse()"
+                [character]="creationStore.generatedCharacter()"
+                [errors]="getValidationErrors()"
+                [warnings]="getValidationWarnings()"
+                (confirm)="confirmCreation()"
+                (adjust)="requestAdjustment(creationStore.mode() === 'universe' ? 'universe' : 'character')"
+                (regenerate)="regenerate()"
+                (discard)="discardCreation()"
+                (imageUploaded)="onConfirmationImageUploaded($event)"
+              ></app-confirmation-flow>
+            } @else {
+              <!-- Legacy previews for non-confirmation mode -->
+              @if (creationStore.generatedUniverse() && !creationStore.confirmationMode()) {
+                <app-universe-preview
+                  [universe]="creationStore.generatedUniverse()!"
+                  (confirm)="confirmUniverse()"
+                  (adjust)="requestAdjustment('universe')"
+                  (regenerate)="regenerate()"
+                ></app-universe-preview>
+              }
+
+              @if (creationStore.generatedCharacter() && !creationStore.confirmationMode()) {
+                <app-character-preview
+                  [character]="creationStore.generatedCharacter()!"
+                  (confirm)="confirmCharacter()"
+                  (adjust)="requestAdjustment('character')"
+                  (regenerate)="regenerate()"
+                ></app-character-preview>
+              }
+            }
+
+            <div class="scroll-anchor" #scrollAnchor></div>
+          </div>
+        }
       }
     </ion-content>
 
     @if (creationStore.mode() !== 'idle' && creationApproach() === 'ai') {
       <ion-footer>
         <ion-toolbar>
+          <!-- Agentic Actions (replaces quick actions with smarter actions) -->
+          @if (creationStore.visibleActions().length > 0) {
+            <app-agentic-actions
+              [allActions]="creationStore.visibleActions()"
+              [showProgress]="true"
+              [completenessScore]="creationStore.completenessScore()"
+              (actionTriggered)="onAgenticAction($event)"
+              (imageSelected)="onAgenticImageSelected($event)"
+              (textInputRequested)="onQuickAction($event)"
+            ></app-agentic-actions>
+          } @else if (creationStore.suggestedActions().length > 0) {
+            <app-quick-actions
+              [actions]="creationStore.suggestedActions()"
+              (actionSelected)="onQuickAction($event)"
+            ></app-quick-actions>
+          }
+
           <div class="input-container">
+            <!-- Help tooltip -->
+            <app-help-tooltip
+              title="Tip de creación"
+              message="Mientras más detalles des, más campos se llenarán automáticamente."
+              (exampleSelected)="onHelpExampleSelected($event)"
+            ></app-help-tooltip>
+
             <!-- Botón de imagen -->
             <ion-button fill="clear" class="attach-button" (click)="triggerImageUpload()">
               <ion-icon slot="icon-only" name="image-outline"></ion-icon>
@@ -270,12 +349,6 @@ export type CreationApproach = 'manual' | 'ai';
               <ion-icon slot="icon-only" name="send"></ion-icon>
             </ion-button>
           </div>
-          @if (creationStore.suggestedActions().length > 0) {
-            <app-quick-actions
-              [actions]="creationStore.suggestedActions()"
-              (actionSelected)="onQuickAction($event)"
-            ></app-quick-actions>
-          }
         </ion-toolbar>
       </ion-footer>
     }
@@ -356,6 +429,25 @@ export type CreationApproach = 'manual' | 'ai';
       margin: 8px 0 0 0;
       font-size: 13px;
       opacity: 0.8;
+    }
+
+    .experimental-warning {
+      display: flex;
+      align-items: flex-start;
+      gap: 6px;
+      margin-top: 12px;
+      padding: 10px 12px;
+      background: rgba(var(--ion-color-warning-rgb), 0.15);
+      border-radius: 8px;
+      font-size: 12px;
+      text-align: left;
+      line-height: 1.4;
+    }
+
+    .experimental-warning ion-icon {
+      font-size: 16px;
+      flex-shrink: 0;
+      margin-top: 2px;
     }
 
     .options-grid {
@@ -492,7 +584,7 @@ export class CreationHubComponent implements OnInit, AfterViewChecked {
   creationService = inject(CreationService);
   webLLMService = inject(WebLLMService);
   authService = inject(AuthService);
-  private universeStore = inject(UniverseStore);
+  universeStore = inject(UniverseStore);
   private characterStore = inject(CharacterStore);
 
   @ViewChild('contentArea') contentArea!: ElementRef;
@@ -692,7 +784,10 @@ export class CreationHubComponent implements OnInit, AfterViewChecked {
     if (!message) return;
 
     this.userInput.set('');
-    await this.creationService.processUserMessage(message);
+
+    // Use agentic processing for smart extraction and responses
+    console.log('[CreationHub] Sending message with agentic processing:', message.substring(0, 50));
+    await this.creationService.processUserMessageAgentic(message);
     this.shouldScroll = true;
   }
 
@@ -752,5 +847,188 @@ export class CreationHubComponent implements OnInit, AfterViewChecked {
     reader.readAsDataURL(file);
 
     input.value = '';
+  }
+
+  // ============================================
+  // AGENTIC MODE HANDLERS
+  // ============================================
+
+  /**
+   * Handle option selection from agentic welcome screen
+   */
+  onAgenticOptionSelected(option: WelcomeOption): void {
+    if (option.id === 'universe') {
+      this.startCreation('universe');
+    } else if (option.id === 'character') {
+      this.startCreation('character');
+    }
+  }
+
+  /**
+   * Handle free-form input from agentic welcome screen
+   */
+  async onAgenticFreeInput(message: string): Promise<void> {
+    await this.creationService.processInitialMessage(message);
+    this.shouldScroll = true;
+  }
+
+  /**
+   * Handle universe selection for character creation
+   */
+  onUniverseSelectedForCharacter(universe: Universe): void {
+    this.creationStore.setSelectedUniverseId(universe.id ?? null);
+    this.creationStore.updateContext('selectedUniverse', universe);
+    this.startCreation('character');
+  }
+
+  /**
+   * Handle example insertion from help tooltip
+   */
+  onExampleInserted(text: string): void {
+    this.userInput.set(text);
+  }
+
+  /**
+   * Handle help example selection
+   */
+  onHelpExampleSelected(example: HelpExample): void {
+    this.userInput.set(example.text);
+  }
+
+  /**
+   * Handle agentic action execution
+   */
+  async onAgenticAction(action: AgenticAction): Promise<void> {
+    switch (action.type) {
+      case 'confirm_preview':
+        if (action.id === 'confirm_save') {
+          await this.confirmCreation();
+        } else {
+          this.creationService.skipToConfirmation();
+        }
+        break;
+
+      case 'edit_field':
+        this.requestAdjustment(this.creationStore.mode() === 'universe' ? 'universe' : 'character');
+        break;
+
+      case 'regenerate':
+        this.regenerate();
+        break;
+
+      case 'skip_phase':
+        this.creationService.advanceToNextPhase();
+        break;
+
+      case 'undo':
+        // TODO: Implement undo functionality
+        break;
+
+      case 'quick_select':
+        this.onQuickAction(action.label);
+        break;
+    }
+
+    this.shouldScroll = true;
+  }
+
+  /**
+   * Handle image selection from agentic actions
+   */
+  async onAgenticImageSelected(data: { base64: string; mimeType: string; action: AgenticAction }): Promise<void> {
+    await this.creationService.processImage(data.base64, data.mimeType);
+    this.shouldScroll = true;
+  }
+
+  /**
+   * Handle confirmation from confirmation flow
+   */
+  async confirmCreation(): Promise<void> {
+    await this.creationService.confirmCreation();
+    this.shouldScroll = true;
+  }
+
+  /**
+   * Handle discard from confirmation flow
+   */
+  discardCreation(): void {
+    this.creationStore.setGeneratedUniverse(null);
+    this.creationStore.setGeneratedCharacter(null);
+    this.creationStore.exitConfirmationMode();
+    this.creationStore.addMessage({
+      role: 'assistant',
+      content: '¿Qué te gustaría cambiar? Puedo ajustar cualquier detalle.'
+    });
+    this.shouldScroll = true;
+  }
+
+  /**
+   * Handle image upload from confirmation flow
+   */
+  async onConfirmationImageUploaded(data: { base64: string; mimeType: string }): Promise<void> {
+    const mode = this.creationStore.mode();
+    if (mode === 'universe') {
+      const universe = this.creationStore.generatedUniverse();
+      if (universe) {
+        this.creationStore.setGeneratedUniverse({
+          ...universe,
+          coverImage: data.base64
+        });
+      }
+    } else if (mode === 'character') {
+      const character = this.creationStore.generatedCharacter();
+      if (character) {
+        this.creationStore.setGeneratedCharacter({
+          ...character,
+          avatar: { ...character.avatar, photoUrl: data.base64 }
+        } as Partial<Character>);
+      }
+    }
+
+    // Re-validate after image upload
+    const { warnings } = this.validateAfterImageUpload();
+    this.creationStore.setValidationWarnings(warnings);
+  }
+
+  /**
+   * Get validation errors for confirmation flow
+   */
+  getValidationErrors(): ValidationMessage[] {
+    return this.creationStore.validationErrors().map(msg => ({
+      type: 'error' as const,
+      message: msg
+    }));
+  }
+
+  /**
+   * Get validation warnings for confirmation flow
+   */
+  getValidationWarnings(): ValidationMessage[] {
+    return this.creationStore.validationWarnings().map(msg => ({
+      type: 'warning' as const,
+      message: msg
+    }));
+  }
+
+  /**
+   * Validate after image upload
+   */
+  private validateAfterImageUpload(): { warnings: string[] } {
+    const warnings: string[] = [];
+    const mode = this.creationStore.mode();
+
+    if (mode === 'universe') {
+      const universe = this.creationStore.generatedUniverse();
+      if (!universe?.statDefinitions || Object.keys(universe.statDefinitions).length === 0) {
+        warnings.push('Sin estadísticas definidas - se usarán las predeterminadas');
+      }
+    } else {
+      const character = this.creationStore.generatedCharacter();
+      if (!character?.stats || Object.keys(character.stats).length === 0) {
+        warnings.push('Sin estadísticas asignadas');
+      }
+    }
+
+    return { warnings };
   }
 }

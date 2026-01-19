@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
 import { CreationStore, CreationMode } from '../data-access/creation.store';
 import { RagContextService } from './rag-context.service';
 import { WebLLMService } from '../../../core/services/webllm.service';
@@ -14,6 +14,19 @@ import {
   isPhaseComplete,
   calculatePhaseProgress
 } from './creation-phases';
+import { AIOrchestratorService, IntentDetectorService, DynamicPhaseEngineService } from '../../../core/services/ai';
+import {
+  AgenticAction,
+  AgenticContext,
+  DynamicPhaseState,
+  DEFAULT_AGENTIC_ACTIONS,
+  getVisibleActions,
+  createAgenticContext,
+  BulkExtraction
+} from '../models/agentic-action.model';
+
+// Logger prefix for easy filtering in console
+const LOG_PREFIX = '[CreationService]';
 
 @Injectable({ providedIn: 'root' })
 export class CreationService {
@@ -22,23 +35,88 @@ export class CreationService {
   private webLLM = inject(WebLLMService);
   private universeStore = inject(UniverseStore);
   private characterStore = inject(CharacterStore);
+  private aiOrchestrator = inject(AIOrchestratorService);
+  private intentDetector = inject(IntentDetectorService);
+  private dynamicPhaseEngine = inject(DynamicPhaseEngineService);
 
   private pendingImage: { base64: string; mimeType: string } | null = null;
   private collectedData: Record<string, any> = {};
+
+  // Agentic mode state
+  private _filledFields: string[] = [];
+
+  // Logging helpers
+  private log(message: string, data?: unknown): void {
+    console.log(`${LOG_PREFIX} ${message}`, data !== undefined ? data : '');
+  }
+  private logWarn(message: string, data?: unknown): void {
+    console.warn(`${LOG_PREFIX} ⚠️ ${message}`, data !== undefined ? data : '');
+  }
+  private logError(message: string, data?: unknown): void {
+    console.error(`${LOG_PREFIX} ❌ ${message}`, data !== undefined ? data : '');
+  }
 
   // Current phase tracking
   private currentPhases: CreationPhase[] = [];
   private currentPhaseIndex = 0;
 
+  // Agentic mode flag - enabled by default for streaming experience
+  private _useAgenticMode = signal<boolean>(true);
+  private _agenticSessionId: string | null = null;
+
+  /**
+   * Whether agentic mode is enabled
+   */
+  readonly useAgenticMode = this._useAgenticMode.asReadonly();
+
+  /**
+   * Enables or disables agentic AI mode
+   */
+  setAgenticMode(enabled: boolean): void {
+    this._useAgenticMode.set(enabled);
+  }
+
+  /**
+   * Gets the current agentic session ID
+   */
+  getAgenticSessionId(): string | null {
+    return this._agenticSessionId;
+  }
+
+  /**
+   * Gets the AI orchestrator service for direct access
+   */
+  getOrchestrator(): AIOrchestratorService {
+    return this.aiOrchestrator;
+  }
+
   /**
    * Inicia un nuevo flujo de creación con sistema de fases
    */
   startCreation(mode: 'universe' | 'character' | 'action'): void {
+    this.log(`========== STARTING CREATION ==========`);
+    this.log(`Mode: ${mode}`);
+    this.log(`Agentic mode enabled: ${this._useAgenticMode()}`);
+    this.log(`WebLLM ready: ${this.webLLM.isReady()}`);
+
     this.creationStore.reset();
     this.creationStore.setMode(mode);
     this.creationStore.setPhase('gathering');
     this.collectedData = {};
     this.currentPhaseIndex = 0;
+
+    // If agentic mode is enabled, start orchestrator session
+    if (this._useAgenticMode() && (mode === 'universe' || mode === 'character')) {
+      this._agenticSessionId = this.aiOrchestrator.startSession(mode);
+
+      // If character mode and we have universes, we need to let user select
+      if (mode === 'character') {
+        const universes = this.universeStore.allUniverses();
+        if (universes.length > 0) {
+          this.creationStore.setSuggestedActions(universes.map(u => u.name));
+        }
+      }
+    }
 
     // Seleccionar las fases según el modo
     if (mode === 'universe') {
@@ -68,14 +146,28 @@ export class CreationService {
    * Procesa un mensaje del usuario con contexto de fase
    */
   async processUserMessage(message: string): Promise<void> {
+    this.log(`========== PROCESSING USER MESSAGE ==========`);
+    this.log(`Message: "${message.substring(0, 100)}${message.length > 100 ? '...' : ''}"`);
+    this.log(`Current mode: ${this.creationStore.mode()}`);
+    this.log(`Current phase: ${this.currentPhases[this.currentPhaseIndex]?.id || 'none'}`);
+    this.log(`Agentic mode: ${this._useAgenticMode()}, Session: ${this._agenticSessionId}`);
+
     // Agregar mensaje del usuario
     this.creationStore.addMessage({
       role: 'user',
       content: message
     });
 
+    // If agentic mode is enabled and we have a session, delegate to orchestrator
+    if (this._useAgenticMode() && this._agenticSessionId) {
+      this.log(`Delegating to orchestrator (session: ${this._agenticSessionId})`);
+      await this.processWithOrchestrator(message);
+      return;
+    }
+
     // Verificar si tenemos el modelo cargado
     if (!this.webLLM.isReady()) {
+      this.logWarn(`WebLLM not ready - cannot process message`);
       this.creationStore.addMessage({
         role: 'assistant',
         content: '⚠️ Para continuar, necesito que cargues el modelo de IA primero. Vuelve a la pantalla inicial y presiona "Cargar Modelo de IA".'
@@ -83,27 +175,236 @@ export class CreationService {
       return;
     }
 
+    this.log(`WebLLM is ready - starting generation`);
     this.creationStore.setGenerating(true);
 
     try {
       // Extraer datos del mensaje según la fase actual
+      this.log(`Extracting data from message...`);
       await this.extractDataFromMessage(message);
+      this.log(`Collected data after extraction:`, this.collectedData);
 
       // Generar respuesta con contexto de fase
+      this.log(`Generating phase-aware response...`);
+      const startTime = Date.now();
       const response = await this.generatePhaseAwareResponse(message);
+      const elapsed = Date.now() - startTime;
+      this.log(`Response generated in ${elapsed}ms`);
+      this.log(`Response length: ${response.length} chars`);
+      this.log(`Response preview: "${response.substring(0, 200)}${response.length > 200 ? '...' : ''}"`);
+
+      // Check if response contains system prompt (bug detection)
+      if (response.includes('###CONOCIMIENTO DEL SISTEMA') || response.includes('###INSTRUCCIONES###')) {
+        this.logError(`BUG DETECTED: Response contains system prompt!`);
+        this.logError(`Full response:`, response);
+      }
+
       this.creationStore.addMessage({
         role: 'assistant',
         content: response
       });
 
       // Verificar si la fase está completa
+      this.log(`Checking phase completion...`);
       await this.checkPhaseCompletion(response);
 
       // Actualizar sugerencias
       this.setSuggestedActionsForPhase();
+      this.log(`========== MESSAGE PROCESSING COMPLETE ==========`);
 
     } catch (error) {
-      console.error('Error generating response:', error);
+      this.logError('Error generating response:', error);
+      this.creationStore.addMessage({
+        role: 'assistant',
+        content: '❌ Hubo un error al procesar tu mensaje. ¿Podrías intentarlo de nuevo?'
+      });
+    } finally {
+      this.creationStore.setGenerating(false);
+    }
+  }
+
+  /**
+   * Procesa un mensaje del usuario con streaming visual de tokens
+   */
+  async processUserMessageWithStreaming(message: string): Promise<void> {
+    this.log(`========== PROCESSING USER MESSAGE WITH STREAMING ==========`);
+    this.log(`Message: "${message.substring(0, 100)}${message.length > 100 ? '...' : ''}"`);
+    this.log(`Current mode: ${this.creationStore.mode()}`);
+    this.log(`Current phase: ${this.currentPhases[this.currentPhaseIndex]?.id || 'none'}`);
+
+    // Add user message
+    this.creationStore.addMessage({
+      role: 'user',
+      content: message
+    });
+
+    // Check if WebLLM is ready
+    if (!this.webLLM.isReady()) {
+      this.logWarn(`WebLLM not ready - cannot process message`);
+      this.creationStore.addMessage({
+        role: 'assistant',
+        content: '⚠️ Para continuar, necesito que cargues el modelo de IA primero. Vuelve a la pantalla inicial y presiona "Cargar Modelo de IA".'
+      });
+      return;
+    }
+
+    // Start streaming
+    this.creationStore.startStreaming();
+
+    try {
+      // Extract data from message according to current phase
+      this.log(`Extracting data from message...`);
+      await this.extractDataFromMessage(message);
+      this.log(`Collected data after extraction:`, this.collectedData);
+
+      // Build messages for the AI
+      const messages = this.buildStreamingMessages(message);
+      this.log(`Calling WebLLM.chatWithStreaming()...`);
+      const startTime = Date.now();
+
+      // Call streaming chat
+      const finalContent = await this.webLLM.chatWithStreaming(
+        messages,
+        (token, fullContent) => {
+          this.creationStore.appendStreamingToken(token);
+        }
+      );
+
+      const elapsed = Date.now() - startTime;
+      this.log(`Response generated in ${elapsed}ms`);
+      this.log(`Response length: ${finalContent.length} chars`);
+
+      // Check if response contains system prompt (bug detection)
+      if (finalContent.includes('###CONOCIMIENTO DEL SISTEMA') || finalContent.includes('###INSTRUCCIONES###')) {
+        this.logError(`BUG DETECTED: Response contains system prompt!`);
+      }
+
+      // Finish streaming (this adds the message to the store)
+      this.creationStore.finishStreaming();
+
+      // Check phase completion
+      this.log(`Checking phase completion...`);
+      await this.checkPhaseCompletion(finalContent);
+
+      // Update suggestions
+      this.setSuggestedActionsForPhase();
+      this.log(`========== STREAMING MESSAGE PROCESSING COMPLETE ==========`);
+
+    } catch (error) {
+      this.logError('Error generating streaming response:', error);
+      this.creationStore.cancelStreaming();
+      this.creationStore.addMessage({
+        role: 'assistant',
+        content: '❌ Hubo un error al procesar tu mensaje. ¿Podrías intentarlo de nuevo?'
+      });
+    }
+  }
+
+  /**
+   * Builds messages array for streaming chat
+   */
+  private buildStreamingMessages(userMessage: string): Array<{ role: 'system' | 'user' | 'assistant'; content: string }> {
+    const mode = this.creationStore.mode();
+    const currentPhase = this.currentPhases[this.currentPhaseIndex];
+    const history = this.creationStore.getConversationHistory();
+
+    // Build phase-specific system prompt
+    let systemPrompt = this.ragContext.getSystemKnowledge();
+
+    // Add phase-specific RAG knowledge
+    systemPrompt += `\n\n${currentPhase?.ragPrompt || ''}`;
+
+    // Add collected data
+    if (Object.keys(this.collectedData).length > 0) {
+      systemPrompt += `\n\n###DATOS YA RECOLECTADOS###\n${JSON.stringify(this.collectedData, null, 2)}`;
+    }
+
+    // For characters, add selected universe info
+    if (mode === 'character' && this.collectedData['selectedUniverse']) {
+      const universe = this.collectedData['selectedUniverse'] as Universe;
+      systemPrompt += `\n\n###UNIVERSO SELECCIONADO###\n`;
+      systemPrompt += `Nombre: ${universe.name}\n`;
+      systemPrompt += `Stats disponibles: ${Object.keys(universe.statDefinitions).join(', ')}\n`;
+      systemPrompt += `Rangos: ${universe.awakeningSystem?.levels.join(' → ')}\n`;
+    }
+
+    // Phase instructions - very concise
+    systemPrompt += `\n\nFASE: ${currentPhase?.name || 'General'} (${this.currentPhaseIndex + 1}/${this.currentPhases.length})`;
+
+    if (currentPhase?.questions.length) {
+      const pendingQuestions = currentPhase.questions.filter(
+        q => !this.collectedData[q.field]
+      );
+      if (pendingQuestions.length > 0) {
+        systemPrompt += `\nPREGUNTA A HACER: "${pendingQuestions[0].question}"`;
+        systemPrompt += `\nResponde breve y haz SOLO esta pregunta.`;
+      } else {
+        systemPrompt += `\nFase completa. Di "¡Perfecto!" y pregunta si quiere continuar.`;
+      }
+    }
+
+    // Final reminder
+    systemPrompt += `\n\nRECUERDA: Máximo 2 oraciones. 1 pregunta. No repitas instrucciones.`;
+
+    // Build messages array
+    return [
+      { role: 'system' as const, content: systemPrompt },
+      ...history.slice(-6).map(m => ({ role: m.role as 'user' | 'assistant', content: m.content })),
+      { role: 'user' as const, content: userMessage }
+    ];
+  }
+
+  /**
+   * Processes a message using the agentic AI orchestrator
+   */
+  private async processWithOrchestrator(message: string): Promise<void> {
+    if (!this._agenticSessionId) return;
+
+    this.creationStore.setGenerating(true);
+
+    try {
+      const result = await this.aiOrchestrator.processMessage(this._agenticSessionId, message);
+
+      // Add response to conversation
+      this.creationStore.addMessage({
+        role: 'assistant',
+        content: result.response
+      });
+
+      // Update suggested actions
+      if (result.suggestedActions.length > 0) {
+        this.creationStore.setSuggestedActions(result.suggestedActions);
+      }
+
+      // If entity was generated, store it
+      if (result.generatedEntity) {
+        const mode = this.creationStore.mode();
+        if (mode === 'universe') {
+          this.creationStore.setGeneratedUniverse(result.generatedEntity as Partial<Universe>);
+        } else if (mode === 'character') {
+          this.creationStore.setGeneratedCharacter(result.generatedEntity as Partial<Character>);
+        }
+      }
+
+      // Handle phase changes
+      if (result.stateUpdates.phase) {
+        this.creationStore.setPhase(result.stateUpdates.phase as any);
+      }
+
+      // Handle confirmation requests
+      if (result.requiresConfirmation) {
+        this.creationStore.setPhase('reviewing');
+      }
+
+      // Update progress from session summary
+      const summary = this.aiOrchestrator.getSessionSummary(this._agenticSessionId);
+      if (summary) {
+        this.creationStore.updateContext('phaseProgress', summary.progressPercent);
+        this.creationStore.updateContext('currentPhase', summary.phase);
+      }
+
+    } catch (error) {
+      console.error('Error in agentic processing:', error);
       this.creationStore.addMessage({
         role: 'assistant',
         content: '❌ Hubo un error al procesar tu mensaje. ¿Podrías intentarlo de nuevo?'
@@ -359,50 +660,586 @@ export class CreationService {
   }
 
   // ============================================
+  // AGENTIC MODE METHODS
+  // ============================================
+
+  /**
+   * Initializes the agentic welcome screen with context
+   */
+  initializeAgenticWelcome(): void {
+    this.log('Initializing agentic welcome screen');
+
+    // Get available universes for context
+    const universes = this.universeStore.allUniverses();
+    this.creationStore.setAvailableUniverses(universes);
+
+    // Mark welcome as shown
+    this.creationStore.setAgenticWelcomeShown(true);
+
+    this.log(`Found ${universes.length} available universes`);
+  }
+
+  /**
+   * Processes user message in agentic mode with bulk extraction
+   */
+  async processUserMessageAgentic(message: string): Promise<void> {
+    this.log(`========== AGENTIC PROCESSING ==========`);
+    this.log(`Message: "${message.substring(0, 100)}${message.length > 100 ? '...' : ''}"`);
+
+    // Store last user message
+    this.creationStore.setLastUserMessage(message);
+
+    // Add user message to store
+    this.creationStore.addMessage({
+      role: 'user',
+      content: message
+    });
+
+    // Detect target type if not already set
+    const currentMode = this.creationStore.mode();
+    let targetType: 'universe' | 'character' = 'universe';
+
+    if (currentMode === 'idle' || currentMode === 'action') {
+      // Detect from message
+      const detected = this.intentDetector.detectTargetFromInput(message, 'es');
+      if (detected !== 'unknown') {
+        targetType = detected;
+        this.creationStore.setMode(targetType);
+        this.log(`Detected target type: ${targetType}`);
+      }
+    } else {
+      targetType = currentMode as 'universe' | 'character';
+    }
+
+    // Perform bulk extraction
+    this.log('Performing bulk extraction...');
+    const extraction = this.intentDetector.extractAllFields(message, targetType, 'es');
+    this.log(`Extraction result:`, extraction);
+
+    // Update collected data and filled fields
+    this.updateCollectedDataFromExtraction(extraction);
+
+    // Update extraction progress
+    this.creationStore.setExtractionProgress(extraction.completenessScore);
+
+    // Calculate phase state
+    const phaseState = this.dynamicPhaseEngine.calculatePhaseState(
+      targetType,
+      this._filledFields,
+      this.currentPhaseIndex
+    );
+    this.creationStore.setDynamicPhaseState(phaseState);
+
+    this.log(`Phase state:`, phaseState);
+
+    // Update visible actions
+    this.updateVisibleActions(targetType, phaseState, extraction);
+
+    // Check if we should go directly to confirmation
+    if (extraction.completenessScore >= 70 && extraction.missingRequiredFields.length === 0) {
+      this.log('High completeness - generating preview');
+      await this.generateAndShowPreview(targetType);
+      return;
+    }
+
+    // Generate intelligent response
+    await this.generateAgenticResponse(message, extraction, phaseState);
+  }
+
+  /**
+   * Updates collected data from bulk extraction
+   */
+  private updateCollectedDataFromExtraction(extraction: BulkExtraction): void {
+    for (const [key, value] of Object.entries(extraction.fields)) {
+      if (value !== null && value !== undefined) {
+        this.collectedData[key] = value;
+        if (!this._filledFields.includes(key)) {
+          this._filledFields.push(key);
+        }
+      }
+    }
+    this.creationStore.updateContext('collectedData', this.collectedData);
+    this.log(`Collected data updated:`, this.collectedData);
+    this.log(`Filled fields:`, this._filledFields);
+  }
+
+  /**
+   * Updates visible actions based on current context
+   */
+  private updateVisibleActions(
+    mode: 'universe' | 'character',
+    phaseState: DynamicPhaseState,
+    extraction: BulkExtraction
+  ): void {
+    const entity = mode === 'universe'
+      ? this.creationStore.generatedUniverse()
+      : this.creationStore.generatedCharacter();
+
+    const context = createAgenticContext(mode, phaseState, entity, {
+      availableUniverses: this.universeStore.allUniverses(),
+      selectedUniverseId: this.creationStore.selectedUniverseId(),
+      lastUserMessage: this.creationStore.lastUserMessage(),
+      isConfirmationMode: this.creationStore.confirmationMode(),
+      validationWarnings: this.creationStore.validationWarnings(),
+      validationErrors: this.creationStore.validationErrors()
+    });
+
+    const visibleActions = getVisibleActions(DEFAULT_AGENTIC_ACTIONS, context);
+
+    // Add smart suggestions as quick select actions
+    const suggestions = this.dynamicPhaseEngine.getSmartSuggestions(
+      mode,
+      phaseState.currentPhaseId,
+      this._filledFields,
+      this.creationStore.lastUserMessage()
+    );
+
+    const suggestionActions: AgenticAction[] = suggestions.map((label, i) => ({
+      id: `suggestion_${i}`,
+      type: 'quick_select' as const,
+      label,
+      component: 'chip' as const,
+      visibility: 'always' as const,
+      priority: 40 - i
+    }));
+
+    this.creationStore.setVisibleActions([...visibleActions, ...suggestionActions]);
+  }
+
+  /**
+   * Generates and shows preview when completeness is high
+   */
+  private async generateAndShowPreview(targetType: 'universe' | 'character'): Promise<void> {
+    this.log('Generating preview from collected data');
+    this.creationStore.setGenerating(true);
+
+    try {
+      // Build entity from collected data
+      if (targetType === 'universe') {
+        const universeData = this.buildUniverseFromCollectedData();
+        this.creationStore.setGeneratedUniverse(universeData);
+        this.log('Generated universe preview:', universeData);
+      } else {
+        const characterData = this.buildCharacterFromCollectedData();
+        this.creationStore.setGeneratedCharacter(characterData);
+        this.log('Generated character preview:', characterData);
+      }
+
+      // Validate and enter confirmation mode
+      const { warnings, errors } = this.validateGeneratedEntity(targetType);
+      this.creationStore.enterConfirmationMode(warnings, errors);
+
+      // Add confirmation message
+      this.creationStore.addMessage({
+        role: 'assistant',
+        content: this.buildConfirmationMessage(targetType, warnings, errors)
+      });
+
+    } catch (error) {
+      this.logError('Error generating preview:', error);
+      this.creationStore.addMessage({
+        role: 'assistant',
+        content: 'Hubo un error al generar la vista previa. ¿Podrías intentarlo de nuevo?'
+      });
+    } finally {
+      this.creationStore.setGenerating(false);
+    }
+  }
+
+  /**
+   * Generates intelligent response based on extraction and phase
+   */
+  private async generateAgenticResponse(
+    message: string,
+    extraction: BulkExtraction,
+    phaseState: DynamicPhaseState
+  ): Promise<void> {
+    this.creationStore.setGenerating(true);
+
+    try {
+      // Build prompt for LLM
+      const systemPrompt = this.buildAgenticSystemPrompt(extraction, phaseState);
+
+      // Get history but FILTER OUT problematic messages
+      // The Phi-3 model tends to repeat structured content, so we clean it
+      const rawHistory = this.creationStore.getConversationHistory().slice(-4);
+      const cleanHistory = rawHistory
+        .filter(m => {
+          // Remove messages that contain phase structure indicators
+          const hasPhaseStructure = m.content.includes('FASE ') &&
+                                    (m.content.includes('RECUERDA:') || m.content.includes('---'));
+          const hasInstructions = m.content.includes('###') || m.content.includes('INSTRUCCIONES');
+          return !hasPhaseStructure && !hasInstructions;
+        })
+        .map(m => ({
+          role: m.role as 'user' | 'assistant',
+          // Truncate very long messages to avoid context issues
+          content: m.content.length > 500 ? m.content.substring(0, 500) + '...' : m.content
+        }));
+
+      this.log(`History: ${rawHistory.length} messages, after cleaning: ${cleanHistory.length}`);
+
+      const messages = [
+        { role: 'system' as const, content: systemPrompt },
+        ...cleanHistory,
+        { role: 'user' as const, content: message }
+      ];
+
+      this.log(`Sending ${messages.length} messages to LLM`);
+      this.log(`System prompt preview: "${systemPrompt.substring(0, 200)}..."`);
+      this.log(`User message: "${message}"`);
+
+
+      // Use streaming for visual feedback
+      this.creationStore.startStreaming();
+
+      const response = await this.webLLM.chatWithStreaming(
+        messages,
+        (token) => {
+          this.creationStore.appendStreamingToken(token);
+        }
+      );
+
+      this.creationStore.finishStreaming();
+
+      // Check if response contains JSON (generated entity)
+      await this.checkForGeneratedEntity(response);
+
+      // Update phase if needed
+      this.maybeAdvancePhase(extraction);
+
+    } catch (error) {
+      this.logError('Error generating agentic response:', error);
+      this.creationStore.cancelStreaming();
+      this.creationStore.addMessage({
+        role: 'assistant',
+        content: 'Hubo un problema al procesar tu mensaje. ¿Podrías intentarlo de nuevo?'
+      });
+    } finally {
+      this.creationStore.setGenerating(false);
+    }
+  }
+
+  /**
+   * Builds agentic system prompt with extraction context
+   */
+  private buildAgenticSystemPrompt(
+    extraction: BulkExtraction,
+    phaseState: DynamicPhaseState
+  ): string {
+    const mode = this.creationStore.mode();
+    const completeness = extraction.completenessScore;
+
+    // Construir lista de lo que ya tenemos de forma natural
+    const collectedItems: string[] = [];
+    if (this.collectedData['name']) collectedItems.push(`nombre: "${this.collectedData['name']}"`);
+    if (this.collectedData['theme']) collectedItems.push(`tema: ${this.collectedData['theme']}`);
+    if (this.collectedData['statNames']?.length) collectedItems.push(`${this.collectedData['statNames'].length} stats`);
+    if (this.collectedData['description']) collectedItems.push('descripción');
+
+    const collectedSummary = collectedItems.length > 0
+      ? `Ya tengo: ${collectedItems.join(', ')}.`
+      : 'Aún no tengo información.';
+
+    // Determinar qué preguntar según lo que falta
+    let nextQuestion = '';
+    if (!this.collectedData['name']) {
+      nextQuestion = mode === 'universe'
+        ? '¿Cómo se llama tu universo?'
+        : '¿Cómo se llama tu personaje?';
+    } else if (!this.collectedData['theme'] && mode === 'universe') {
+      nextQuestion = '¿Qué temática tiene? (fantasía, sci-fi, etc.)';
+    } else if (!this.collectedData['statNames'] && mode === 'universe') {
+      nextQuestion = '¿Qué estadísticas quieres? (fuerza, agilidad, etc.)';
+    } else if (extraction.missingRequiredFields.length > 0) {
+      nextQuestion = extraction.suggestedQuestion || `¿Me cuentas más sobre ${extraction.missingRequiredFields[0]}?`;
+    } else {
+      nextQuestion = '¿Quieres agregar más detalles o generamos el preview?';
+    }
+
+    // Prompt SIMPLE y conversacional
+    let prompt = `Eres un asistente amigable que ayuda a crear ${mode === 'universe' ? 'universos' : 'personajes'} de RPG.
+
+TU OBJETIVO: Responder en máximo 2 oraciones y hacer 1 pregunta.
+
+${collectedSummary}
+Progreso: ${completeness}%
+
+RESPONDE ASÍ:
+- Si el usuario dio info nueva: "¡Genial! [reconoce lo que dijo]." + tu pregunta
+- Si pidió algo: Respóndele directamente
+- Pregunta sugerida: "${nextQuestion}"
+
+NO incluyas listas, bullets, fases ni estructuras. Solo conversa naturalmente.`;
+
+    // Agregar contexto del universo si es personaje
+    if (mode === 'character' && this.collectedData['selectedUniverse']) {
+      const universe = this.collectedData['selectedUniverse'] as Universe;
+      prompt += `\n\nEl personaje pertenece al universo "${universe.name}".`;
+    }
+
+    return prompt;
+  }
+
+  /**
+   * Checks if response contains a generated entity
+   */
+  private async checkForGeneratedEntity(response: string): Promise<void> {
+    const jsonMatch = response.match(/```json\s*([\s\S]*?)\s*```/);
+    if (!jsonMatch) return;
+
+    try {
+      const jsonContent = JSON.parse(jsonMatch[1]);
+      const mode = this.creationStore.mode();
+
+      if (mode === 'universe' && jsonContent.name && jsonContent.statDefinitions) {
+        this.creationStore.setGeneratedUniverse(jsonContent);
+        const { warnings, errors } = this.validateGeneratedEntity('universe');
+        this.creationStore.enterConfirmationMode(warnings, errors);
+      } else if (mode === 'character' && jsonContent.name && jsonContent.stats) {
+        this.creationStore.setGeneratedCharacter(jsonContent);
+        const { warnings, errors } = this.validateGeneratedEntity('character');
+        this.creationStore.enterConfirmationMode(warnings, errors);
+      }
+    } catch (e) {
+      this.logWarn('Could not parse JSON from response:', e);
+    }
+  }
+
+  /**
+   * Advances phase if appropriate
+   */
+  private maybeAdvancePhase(extraction: BulkExtraction): void {
+    if (extraction.missingRequiredFields.length === 0 &&
+        this.currentPhaseIndex < this.currentPhases.length - 1) {
+      const suggestion = this.dynamicPhaseEngine.suggestNextPhase(
+        this.creationStore.mode() as 'universe' | 'character',
+        this.currentPhaseIndex,
+        this._filledFields
+      );
+
+      if (suggestion) {
+        this.currentPhaseIndex = suggestion.phaseIndex;
+        this.creationStore.updateContext('currentPhase', suggestion.phaseId);
+      }
+    }
+  }
+
+  /**
+   * Builds universe from collected data
+   */
+  private buildUniverseFromCollectedData(): Partial<Universe> {
+    const data = this.collectedData;
+
+    // Build stat definitions if we have stat names
+    let statDefinitions: Record<string, any> = {};
+    if (data['statNames'] && Array.isArray(data['statNames'])) {
+      const colors = ['#FF5722', '#4CAF50', '#E91E63', '#2196F3', '#9C27B0', '#00BCD4', '#FF9800', '#FFEB3B'];
+      const icons = ['barbell-outline', 'flash-outline', 'heart-outline', 'bulb-outline', 'eye-outline', 'pulse-outline', 'star-outline', 'sparkles-outline'];
+
+      (data['statNames'] as string[]).forEach((name, i) => {
+        const key = name.toLowerCase().replace(/\s+/g, '_');
+        statDefinitions[key] = {
+          name: name.charAt(0).toUpperCase() + name.slice(1),
+          abbreviation: name.substring(0, 3).toUpperCase(),
+          icon: icons[i % icons.length],
+          minValue: 0,
+          maxValue: 999,
+          category: 'primary',
+          color: colors[i % colors.length]
+        };
+      });
+    }
+
+    // Build awakening system if we have rank info
+    let awakeningSystem = undefined;
+    const rankInfo = this.intentDetector.extractRankSystem(
+      JSON.stringify(data['rankSystem'] || '') + ' ' + (data['description'] || '')
+    );
+    if (rankInfo) {
+      awakeningSystem = {
+        enabled: true,
+        levels: rankInfo.levels,
+        thresholds: this.generateThresholds(rankInfo.levels.length)
+      };
+    }
+
+    return {
+      name: data['name'] || 'Nuevo Universo',
+      description: data['description'] || `Un universo de ${data['theme'] || 'fantasía'}`,
+      statDefinitions: Object.keys(statDefinitions).length > 0 ? statDefinitions : undefined,
+      initialPoints: data['initialPoints'] || 60,
+      awakeningSystem,
+      progressionRules: [],
+      isPublic: false
+    };
+  }
+
+  /**
+   * Builds character from collected data
+   */
+  private buildCharacterFromCollectedData(): Partial<Character> {
+    const data = this.collectedData;
+    const universe = data['selectedUniverse'] as Universe | undefined;
+
+    // Build initial stats from universe
+    const stats: Record<string, number> = {};
+    if (universe?.statDefinitions) {
+      const statCount = Object.keys(universe.statDefinitions).length;
+      const pointsPerStat = Math.floor((universe.initialPoints || 60) / statCount);
+
+      for (const key of Object.keys(universe.statDefinitions)) {
+        stats[key] = pointsPerStat;
+      }
+    }
+
+    return {
+      name: data['name'] || 'Nuevo Personaje',
+      universeId: universe?.id || data['universeId'],
+      stats,
+      backstory: data['backstory'] || data['description'],
+      progression: {
+        level: 1,
+        experience: 0,
+        awakening: universe?.awakeningSystem?.levels[0] || 'E',
+        title: data['class'] || null
+      }
+    };
+  }
+
+  /**
+   * Validates generated entity
+   */
+  private validateGeneratedEntity(type: 'universe' | 'character'): {
+    warnings: string[];
+    errors: string[];
+  } {
+    const warnings: string[] = [];
+    const errors: string[] = [];
+
+    if (type === 'universe') {
+      const universe = this.creationStore.generatedUniverse();
+      if (!universe?.name) {
+        errors.push('El universo necesita un nombre');
+      }
+      if (!universe?.statDefinitions || Object.keys(universe.statDefinitions).length === 0) {
+        warnings.push('Sin estadísticas definidas - se usarán las predeterminadas');
+      }
+      if (!universe?.coverImage) {
+        warnings.push('Sin imagen de portada');
+      }
+    } else {
+      const character = this.creationStore.generatedCharacter();
+      if (!character?.name) {
+        errors.push('El personaje necesita un nombre');
+      }
+      if (!character?.universeId) {
+        errors.push('El personaje necesita pertenecer a un universo');
+      }
+      if (!character?.stats || Object.keys(character.stats).length === 0) {
+        warnings.push('Sin estadísticas asignadas');
+      }
+    }
+
+    return { warnings, errors };
+  }
+
+  /**
+   * Builds confirmation message
+   */
+  private buildConfirmationMessage(
+    type: 'universe' | 'character',
+    warnings: string[],
+    errors: string[]
+  ): string {
+    let message = '';
+
+    if (errors.length > 0) {
+      message = `Hay algunos problemas que necesitan resolverse antes de guardar:\n\n`;
+      message += errors.map(e => `- ${e}`).join('\n');
+    } else if (warnings.length > 0) {
+      message = `Tu ${type === 'universe' ? 'universo' : 'personaje'} está casi listo. `;
+      message += `Hay ${warnings.length} ${warnings.length === 1 ? 'advertencia' : 'advertencias'}:\n\n`;
+      message += warnings.map(w => `- ${w}`).join('\n');
+      message += '\n\nPuedes continuar o ajustar estos detalles.';
+    } else {
+      message = `¡Excelente! Tu ${type === 'universe' ? 'universo' : 'personaje'} está completo. `;
+      message += 'Revisa los detalles y confirma para guardarlo.';
+    }
+
+    return message;
+  }
+
+  /**
+   * Generates thresholds for rank levels
+   */
+  private generateThresholds(count: number): number[] {
+    const thresholds = [0];
+    let current = 50;
+    for (let i = 1; i < count; i++) {
+      thresholds.push(current);
+      current = Math.round(current * 1.8);
+    }
+    return thresholds;
+  }
+
+  /**
+   * Skips to confirmation/preview phase
+   */
+  skipToConfirmation(): void {
+    const mode = this.creationStore.mode() as 'universe' | 'character';
+    this.generateAndShowPreview(mode);
+  }
+
+  /**
+   * Processes a free-form initial message (from welcome screen)
+   */
+  async processInitialMessage(message: string): Promise<void> {
+    // First detect what the user wants to create
+    const detected = this.intentDetector.detectTargetFromInput(message, 'es');
+
+    if (detected !== 'unknown') {
+      // Start creation in detected mode
+      this.startCreation(detected);
+    } else {
+      // Default to universe if unclear
+      this.startCreation('universe');
+    }
+
+    // Process the message
+    await this.processUserMessageAgentic(message);
+  }
+
+  // ============================================
   // MÉTODOS PRIVADOS
   // ============================================
 
   private buildPhaseWelcomeMessage(): string {
     const mode = this.creationStore.mode();
-    const firstPhase = this.currentPhases[0];
 
+    // Mensajes SIMPLES sin listas de fases para evitar que el modelo las repita
     if (mode === 'universe') {
-      return `🌟 **¡Vamos a crear tu universo!**\n\n` +
-        `Te guiaré paso a paso a través de **${this.currentPhases.length} fases**:\n\n` +
-        this.currentPhases.map((p, i) => `${i + 1}. ${p.icon ? '📍' : ''} ${p.name}`).join('\n') +
-        `\n\n---\n\n` +
-        `📍 **Fase 1: ${firstPhase.name}**\n` +
-        `${firstPhase.description}\n\n` +
-        `Empecemos: **¿Cómo se llama tu universo?**\n\n` +
-        `💡 También puedes **subir imágenes** en cualquier momento para usarlas como portada o lugares.`;
+      return `¡Vamos a crear tu universo! Cuéntame, ¿cómo se llama y qué tipo de mundo es?`;
     } else if (mode === 'character') {
       const universes = this.universeStore.allUniverses();
       if (universes.length === 0) {
-        return `⚠️ **No tienes universos creados**\n\n` +
-          `Los personajes necesitan pertenecer a un universo que defina sus estadísticas y reglas.\n\n` +
-          `¿Te gustaría **crear un universo primero**?`;
+        return `Para crear un personaje primero necesitas un universo. ¿Quieres crear uno?`;
       }
-      return `🌟 **¡Vamos a crear tu personaje!**\n\n` +
-        `Te guiaré paso a paso a través de **${this.currentPhases.length} fases**:\n\n` +
-        this.currentPhases.map((p, i) => `${i + 1}. ${p.name}`).join('\n') +
-        `\n\n---\n\n` +
-        `📍 **Fase 1: ${firstPhase.name}**\n\n` +
-        `Tienes ${universes.length} universo${universes.length > 1 ? 's' : ''} disponible${universes.length > 1 ? 's' : ''}:\n` +
-        universes.map(u => `• **${u.name}**`).join('\n') +
-        `\n\n**¿En cuál quieres crear tu personaje?**`;
+      const universeNames = universes.map(u => u.name).join(', ');
+      return `¡Vamos a crear tu personaje! Tienes estos universos: ${universeNames}. ¿En cuál quieres crearlo?`;
+    } else if (mode === 'action') {
+      return `¿Qué quieres crear hoy? Puedo ayudarte con universos o personajes.`;
     }
 
     return '¿En qué puedo ayudarte hoy?';
   }
 
   private buildPhaseIntroMessage(phase: CreationPhase): string {
-    const progress = this.getPhaseProgress();
-    return `---\n\n` +
-      `📍 **Fase ${progress.current}/${progress.total}: ${phase.name}** (${Math.round(progress.percentage)}%)\n` +
-      `${phase.description}\n\n` +
-      (phase.questions.length > 0
-        ? `${phase.questions[0].question}`
-        : 'Revisemos lo que tenemos...');
+    // Mensaje simple sin estructura de fases
+    const question = phase.questions.length > 0
+      ? phase.questions[0].question
+      : '¿Qué más quieres agregar?';
+    return `Genial! ${question}`;
   }
 
   private populateUniverseOptions(): void {
@@ -492,6 +1329,9 @@ export class CreationService {
     const currentPhase = this.currentPhases[this.currentPhaseIndex];
     const history = this.creationStore.getConversationHistory();
 
+    this.log(`--- Building system prompt ---`);
+    this.log(`Mode: ${mode}, Phase: ${currentPhase?.id || 'none'}`);
+
     // Construir prompt específico de la fase
     let systemPrompt = this.ragContext.getSystemKnowledge();
 
@@ -512,34 +1352,68 @@ export class CreationService {
       systemPrompt += `Rangos: ${universe.awakeningSystem?.levels.join(' → ')}\n`;
     }
 
-    // Instrucciones de fase
-    systemPrompt += `\n\n###INSTRUCCIONES###\n`;
-    systemPrompt += `Estás en la fase "${currentPhase?.name}".\n`;
-    systemPrompt += `Progreso: ${this.currentPhaseIndex + 1}/${this.currentPhases.length}\n\n`;
+    // Instrucciones de fase - MUY CONCISAS
+    systemPrompt += `\n\nFASE: ${currentPhase?.name || 'General'} (${this.currentPhaseIndex + 1}/${this.currentPhases.length})`;
 
     if (currentPhase?.questions.length) {
       const pendingQuestions = currentPhase.questions.filter(
         q => !this.collectedData[q.field]
       );
       if (pendingQuestions.length > 0) {
-        systemPrompt += `Preguntas pendientes de esta fase:\n`;
-        pendingQuestions.forEach(q => {
-          systemPrompt += `- ${q.question}\n`;
-        });
+        // Solo la primera pregunta pendiente
+        systemPrompt += `\nPREGUNTA A HACER: "${pendingQuestions[0].question}"`;
+        systemPrompt += `\nResponde breve y haz SOLO esta pregunta.`;
       } else {
-        systemPrompt += `Todas las preguntas de esta fase han sido respondidas.\n`;
-        systemPrompt += `Confirma la información y sugiere pasar a la siguiente fase.\n`;
+        systemPrompt += `\nFase completa. Di "¡Perfecto!" y pregunta si quiere continuar.`;
       }
     }
 
-    // Enviar al modelo
-    const response = await this.webLLM.chat([
-      { role: 'system', content: systemPrompt },
-      ...history.slice(-10).map(m => ({ role: m.role as 'user' | 'assistant', content: m.content })),
-      { role: 'user', content: userMessage }
-    ]);
+    // Recordatorio final muy corto
+    systemPrompt += `\n\nRECUERDA: Máximo 2 oraciones. 1 pregunta. No repitas instrucciones.`;
 
-    return response;
+    this.log(`System prompt length: ${systemPrompt.length} chars`);
+    this.log(`System prompt preview: "${systemPrompt.substring(0, 300)}..."`);
+
+    // Preparar mensajes
+    const messages = [
+      { role: 'system' as const, content: systemPrompt },
+      ...history.slice(-6).map(m => ({ role: m.role as 'user' | 'assistant', content: m.content })),
+      { role: 'user' as const, content: userMessage }
+    ];
+
+    this.log(`Total messages to send: ${messages.length}`);
+    this.log(`History messages included: ${Math.min(history.length, 6)}`);
+
+    // Enviar al modelo
+    this.log(`Calling WebLLM.chat()...`);
+    const response = await this.webLLM.chat(messages);
+
+    // Limpiar respuesta si contiene prompts del sistema
+    let cleanedResponse = response;
+    if (response.includes('###CONOCIMIENTO') || response.includes('###INSTRUCCIONES') || response.includes('###HABILIDADES')) {
+      this.logWarn(`Response contains system prompt markers - cleaning...`);
+      // Intentar extraer solo la parte útil
+      const parts = response.split('---');
+      if (parts.length > 1) {
+        cleanedResponse = parts[0].trim();
+      } else {
+        // Buscar el inicio de la respuesta real
+        const markers = ['###CONOCIMIENTO', '###INSTRUCCIONES', '###HABILIDADES', '###MANEJO'];
+        let firstMarkerIndex = response.length;
+        for (const marker of markers) {
+          const idx = response.indexOf(marker);
+          if (idx > 0 && idx < firstMarkerIndex) {
+            firstMarkerIndex = idx;
+          }
+        }
+        if (firstMarkerIndex > 50) {
+          cleanedResponse = response.substring(0, firstMarkerIndex).trim();
+        }
+      }
+      this.log(`Cleaned response length: ${cleanedResponse.length} (original: ${response.length})`);
+    }
+
+    return cleanedResponse;
   }
 
   private async checkPhaseCompletion(response: string): Promise<void> {

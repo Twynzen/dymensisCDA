@@ -10,6 +10,7 @@ describe('UniversePreviewComponent', () => {
   const mockUniverse: Partial<Universe> = {
     name: 'Test Universe',
     description: 'A test universe for testing purposes',
+    initialPoints: 100,
     statDefinitions: {
       strength: {
         name: 'Fuerza',
@@ -17,9 +18,9 @@ describe('UniversePreviewComponent', () => {
         icon: 'barbell',
         minValue: 1,
         maxValue: 100,
-        defaultValue: 10,
         category: 'primary',
-        color: '#FF5722'
+        color: '#FF5722',
+        isDerived: false
       },
       agility: {
         name: 'Agilidad',
@@ -27,9 +28,9 @@ describe('UniversePreviewComponent', () => {
         icon: 'flash',
         minValue: 1,
         maxValue: 100,
-        defaultValue: 10,
         category: 'primary',
-        color: '#03A9F4'
+        color: '#03A9F4',
+        isDerived: false
       }
     },
     progressionRules: [

@@ -15,6 +15,7 @@ describe('RagContextService', () => {
     createdBy: 'user-1',
     createdAt: new Date(),
     isPublic: false,
+    initialPoints: 100,
     statDefinitions: {
       strength: {
         name: 'Fuerza',
@@ -22,9 +23,9 @@ describe('RagContextService', () => {
         icon: 'barbell',
         minValue: 1,
         maxValue: 100,
-        defaultValue: 10,
         category: 'primary',
-        color: '#FF5722'
+        color: '#FF5722',
+        isDerived: false
       },
       agility: {
         name: 'Agilidad',
@@ -32,9 +33,9 @@ describe('RagContextService', () => {
         icon: 'flash',
         minValue: 1,
         maxValue: 100,
-        defaultValue: 10,
         category: 'primary',
-        color: '#03A9F4'
+        color: '#03A9F4',
+        isDerived: false
       }
     },
     progressionRules: [
@@ -310,6 +311,7 @@ describe('RagContextService', () => {
         createdBy: 'user',
         createdAt: new Date(),
         isPublic: false,
+        initialPoints: 0,
         statDefinitions: {},
         progressionRules: []
       };
