@@ -772,36 +772,19 @@ export class CreationHubComponent implements OnInit, AfterViewChecked {
     }
 
     const alert = await this.alertController.create({
-      header: 'Modo IA en Desarrollo',
+      header: '⚠️ Modo IA en Desarrollo',
       subHeader: 'Funcionalidad Experimental',
-      message: `
-        <div style="text-align: left;">
-          <p>Este flujo de creación con <strong>Asistente IA</strong> está actualmente en desarrollo activo.</p>
-          <br>
-          <p><strong>Es posible que encuentres:</strong></p>
-          <ul style="margin-left: 16px;">
-            <li>Respuestas inesperadas</li>
-            <li>Errores de extracción de datos</li>
-            <li>Comportamientos inconsistentes</li>
-          </ul>
-          <br>
-          <p>Por favor, <strong>reporta cualquier error</strong> que encuentres para ayudarnos a mejorar.</p>
-          <br>
-          <p style="color: var(--ion-color-medium);">Gracias por probar esta funcionalidad experimental.</p>
-        </div>
-      `,
+      message: 'Este flujo de creación con Asistente IA está en desarrollo activo.\n\nEs posible que encuentres:\n• Respuestas inesperadas\n• Errores de extracción\n• Comportamientos inconsistentes\n\nPor favor reporta cualquier error que encuentres. ¡Gracias por probar!',
       cssClass: 'beta-warning-alert',
       buttons: [
         {
           text: 'Cancelar',
-          role: 'cancel',
-          cssClass: 'secondary'
+          role: 'cancel'
         },
         {
-          text: 'Entendido, continuar',
+          text: 'Entendido',
           role: 'confirm',
           handler: () => {
-            // Remember that user has seen the warning this session
             sessionStorage.setItem(dismissedKey, 'true');
           }
         }
