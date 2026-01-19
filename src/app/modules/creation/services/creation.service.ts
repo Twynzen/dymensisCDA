@@ -684,7 +684,7 @@ export class CreationService {
    */
   async processUserMessageAgentic(message: string): Promise<void> {
     this.log(`========== AGENTIC PROCESSING ==========`);
-    this.log(`Message: "${message.substring(0, 100)}${message.length > 100 ? '...' : ''}"`);
+    this.log(`Full message: "${message}"`);
 
     // Store last user message
     this.creationStore.setLastUserMessage(message);
@@ -697,24 +697,39 @@ export class CreationService {
 
     // Detect target type if not already set
     const currentMode = this.creationStore.mode();
+    this.log(`Current mode before detection: ${currentMode}`);
     let targetType: 'universe' | 'character' = 'universe';
 
     if (currentMode === 'idle' || currentMode === 'action') {
       // Detect from message
+      this.log('Detecting target type from message...');
       const detected = this.intentDetector.detectTargetFromInput(message, 'es');
+      this.log(`Detection result: ${detected}`);
       if (detected !== 'unknown') {
         targetType = detected;
         this.creationStore.setMode(targetType);
-        this.log(`Detected target type: ${targetType}`);
+        this.log(`Mode changed to: ${targetType}`);
+      } else {
+        // Try to detect from keywords more aggressively
+        const lowerMsg = message.toLowerCase();
+        if (lowerMsg.includes('personaje') || lowerMsg.includes('heroe') || lowerMsg.includes('protagonista')) {
+          targetType = 'character';
+          this.creationStore.setMode(targetType);
+          this.log(`Fallback detection - Mode changed to: character`);
+        }
       }
     } else {
       targetType = currentMode as 'universe' | 'character';
+      this.log(`Using existing mode: ${targetType}`);
     }
 
     // Perform bulk extraction
-    this.log('Performing bulk extraction...');
+    this.log(`Performing bulk extraction for target: ${targetType}`);
     const extraction = this.intentDetector.extractAllFields(message, targetType, 'es');
-    this.log(`Extraction result:`, extraction);
+    this.log(`Extraction completeness: ${extraction.completenessScore}%`);
+    this.log(`Extracted fields:`, extraction.fields);
+    this.log(`Missing required:`, extraction.missingRequiredFields);
+    this.log(`Suggested question: ${extraction.suggestedQuestion}`);
 
     // Update collected data and filled fields
     this.updateCollectedDataFromExtraction(extraction);
@@ -957,20 +972,16 @@ export class CreationService {
       nextQuestion = '¿Quieres agregar más detalles o generamos el preview?';
     }
 
-    // Prompt SIMPLE y conversacional
-    let prompt = `Eres un asistente amigable que ayuda a crear ${mode === 'universe' ? 'universos' : 'personajes'} de RPG.
-
-TU OBJETIVO: Responder en máximo 2 oraciones y hacer 1 pregunta.
+    // Prompt MUY SIMPLE - Phi-3 mini tiende a divagar con prompts complejos
+    let prompt = `Eres un asistente de creacion de RPG. Responde SOLO con texto natural, maximo 2 oraciones.
 
 ${collectedSummary}
-Progreso: ${completeness}%
 
-RESPONDE ASÍ:
-- Si el usuario dio info nueva: "¡Genial! [reconoce lo que dijo]." + tu pregunta
-- Si pidió algo: Respóndele directamente
-- Pregunta sugerida: "${nextQuestion}"
+Tu siguiente pregunta debe ser: ${nextQuestion}
 
-NO incluyas listas, bullets, fases ni estructuras. Solo conversa naturalmente.`;
+PROHIBIDO: No uses "A:", "B:", "---", listas, bullets, numeros, o cualquier formato. Solo escribe texto conversacional.`;
+
+    this.log(`System prompt: ${prompt}`);
 
     // Agregar contexto del universo si es personaje
     if (mode === 'character' && this.collectedData['selectedUniverse']) {

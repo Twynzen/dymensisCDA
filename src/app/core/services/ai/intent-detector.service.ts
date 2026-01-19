@@ -712,20 +712,39 @@ export class IntentDetectorService {
       : ['character', 'hero', 'protagonist', 'warrior', 'mage', 'hunter', 'level'];
 
     const lowerInput = input.toLowerCase();
+    console.log(`[IntentDetector] detectTargetFromInput: "${input.substring(0, 50)}..."`);
 
     let universeScore = 0;
     let characterScore = 0;
+    const matchedUniverse: string[] = [];
+    const matchedCharacter: string[] = [];
 
     for (const keyword of universeKeywords) {
-      if (lowerInput.includes(keyword)) universeScore++;
+      if (lowerInput.includes(keyword)) {
+        universeScore++;
+        matchedUniverse.push(keyword);
+      }
     }
 
     for (const keyword of characterKeywords) {
-      if (lowerInput.includes(keyword)) characterScore++;
+      if (lowerInput.includes(keyword)) {
+        characterScore++;
+        matchedCharacter.push(keyword);
+      }
     }
 
-    if (universeScore > characterScore) return 'universe';
-    if (characterScore > universeScore) return 'character';
+    console.log(`[IntentDetector] Universe score: ${universeScore} (${matchedUniverse.join(', ')})`);
+    console.log(`[IntentDetector] Character score: ${characterScore} (${matchedCharacter.join(', ')})`);
+
+    if (universeScore > characterScore) {
+      console.log(`[IntentDetector] Result: universe`);
+      return 'universe';
+    }
+    if (characterScore > universeScore) {
+      console.log(`[IntentDetector] Result: character`);
+      return 'character';
+    }
+    console.log(`[IntentDetector] Result: unknown (tie or no matches)`);
     return 'unknown';
   }
 
@@ -813,8 +832,11 @@ export class IntentDetectorService {
       const match = input.match(pattern);
       if (match) {
         const rawValue = match[1] || match[0];
+        console.log(`[IntentDetector] Pattern match for ${fieldDef.key}: "${rawValue}" (pattern: ${pattern})`);
         if (fieldDef.transform) {
-          return fieldDef.transform(rawValue);
+          const transformed = fieldDef.transform(rawValue);
+          console.log(`[IntentDetector] Transformed value: `, transformed);
+          return transformed;
         }
         return rawValue.trim();
       }
@@ -832,6 +854,7 @@ export class IntentDetectorService {
         const valueMatch = afterKeyword.match(/^\s*["']?([^"'\n,]{2,50})["']?/);
         if (valueMatch) {
           const rawValue = valueMatch[1].trim();
+          console.log(`[IntentDetector] Keyword match for ${fieldDef.key}: "${rawValue}" (keyword: ${keyword})`);
           if (fieldDef.transform) {
             return fieldDef.transform(rawValue);
           }
