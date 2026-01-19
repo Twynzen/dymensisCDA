@@ -184,7 +184,7 @@ type AuthMode = 'login' | 'register';
         <!-- Document Reference -->
         <div class="doc-footer">
           <div class="qdt-divider">END OF FORM</div>
-          <p class="doc-ref">DOC-REF: AUTH-{{ generateRef() }}</p>
+          <p class="doc-ref">DOC-REF: AUTH-{{ docRef }}</p>
         </div>
       </div>
     </ion-content>
@@ -616,6 +616,7 @@ export class LoginComponent implements OnInit {
   displayName = '';
   showPassword = signal(false);
   currentDate = '';
+  docRef = '';  // Generated once to avoid NG0100 error
   private returnUrl = '/tabs/characters';
 
   ngOnInit(): void {
@@ -626,6 +627,9 @@ export class LoginComponent implements OnInit {
       month: '2-digit',
       day: '2-digit'
     }).replace(/\//g, '.');
+
+    // Generate doc reference once
+    this.docRef = Math.random().toString(36).substr(2, 9).toUpperCase();
 
     // Get return URL from query params
     this.returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/tabs/characters';
@@ -680,10 +684,6 @@ export class LoginComponent implements OnInit {
     } catch {
       // Error is handled by the service
     }
-  }
-
-  generateRef(): string {
-    return Math.random().toString(36).substr(2, 9).toUpperCase();
   }
 
   private async showToast(message: string, color: string = 'primary'): Promise<void> {

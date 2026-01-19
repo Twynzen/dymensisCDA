@@ -25,10 +25,10 @@ import { AuthService } from '../../core/services/auth.service';
           <ion-label>CREAR</ion-label>
         </ion-tab-button>
 
-        <ion-tab-button (click)="showProfileMenu($event)">
+        <button class="profile-tab-btn" (click)="showProfileMenu($event)">
           <ion-icon name="person-circle-outline"></ion-icon>
-          <ion-label>PERFIL</ion-label>
-        </ion-tab-button>
+          <span class="tab-label">PERFIL</span>
+        </button>
       </ion-tab-bar>
     </ion-tabs>
   `,
@@ -64,6 +64,34 @@ import { AuthService } from '../../core/services/auth.service';
     }
 
     ion-tab-button.tab-selected ion-icon {
+      color: var(--qdt-text-primary);
+    }
+
+    /* Profile button styled like tab-button */
+    .profile-tab-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      border: none;
+      color: var(--qdt-text-subtle);
+      font-family: var(--qdt-font-mono);
+      cursor: pointer;
+      padding: 8px 12px;
+      gap: 2px;
+    }
+
+    .profile-tab-btn ion-icon {
+      font-size: 20px;
+    }
+
+    .profile-tab-btn .tab-label {
+      font-size: 9px;
+      letter-spacing: 0.08em;
+    }
+
+    .profile-tab-btn:hover {
       color: var(--qdt-text-primary);
     }
   `]
