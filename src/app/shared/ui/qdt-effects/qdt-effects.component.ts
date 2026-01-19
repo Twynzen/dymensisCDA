@@ -20,12 +20,6 @@ import { CommonModule } from '@angular/common';
     <!-- Vignette -->
     <div class="qdt-vignette"></div>
 
-    <!-- Corner Brackets -->
-    <div class="qdt-corner-brackets top-left"></div>
-    <div class="qdt-corner-brackets top-right"></div>
-    <div class="qdt-corner-brackets bottom-left"></div>
-    <div class="qdt-corner-brackets bottom-right"></div>
-
     <!-- Glitch Effect (random) -->
     @if (showGlitch()) {
       <div class="qdt-glitch"></div>

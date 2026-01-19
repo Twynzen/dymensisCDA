@@ -100,7 +100,6 @@ import { QdtHudComponent } from '../../shared/ui/qdt-hud/qdt-hud.component';
               <h3>UNIVERSOS</h3>
               <p>Define las reglas de tu mundo: estadisticas, rangos y sistema de progresion</p>
             </div>
-            <div class="feature-code">UNV-001</div>
           </div>
 
           <div class="feature-card">
@@ -111,7 +110,6 @@ import { QdtHudComponent } from '../../shared/ui/qdt-hud/qdt-hud.component';
               <h3>PERSONAJES</h3>
               <p>Crea personajes con stats unicos, trasfondo y personalidad</p>
             </div>
-            <div class="feature-code">CHR-002</div>
           </div>
 
           <div class="feature-card">
@@ -120,9 +118,8 @@ import { QdtHudComponent } from '../../shared/ui/qdt-hud/qdt-hud.component';
             </div>
             <div class="feature-content">
               <h3>CREACION IA</h3>
-              <p>Utiliza herramientas agénticas para generar contenido</p>
+              <p>Utiliza herramientas agenticas para generar contenido</p>
             </div>
-            <div class="feature-code">AGN-003</div>
           </div>
 
           <div class="feature-card">
@@ -133,7 +130,6 @@ import { QdtHudComponent } from '../../shared/ui/qdt-hud/qdt-hud.component';
               <h3>COMPARTIR</h3>
               <p>Comparte tus creaciones con la comunidad o mantenlas privadas</p>
             </div>
-            <div class="feature-code">SHR-004</div>
           </div>
         </div>
       </div>
@@ -248,10 +244,8 @@ import { QdtHudComponent } from '../../shared/ui/qdt-hud/qdt-hud.component';
 
       <!-- Footer -->
       <footer class="app-footer">
-        <div class="qdt-divider">END OF TRANSMISSION</div>
         <p class="footer-title">DYMENSIS//CDA - SISTEMA DE GESTION RPG</p>
-        <p class="footer-version">VERSION 1.0.0 // BUILD 2024</p>
-        <p class="footer-ref">DOC-REF: QDT-{{ generateRef() }}</p>
+        <p class="footer-version">VERSION 1.0.5 // BUILD 2026</p>
       </footer>
     </ion-content>
   `,
@@ -742,9 +736,5 @@ export class HomeComponent implements OnInit {
       return 'linear-gradient(135deg, #27272a, #18181b)';
     }
     return `linear-gradient(135deg, ${colors[0]}33, ${colors[1]}33)`;
-  }
-
-  generateRef(): string {
-    return Math.random().toString(36).substr(2, 9).toUpperCase();
   }
 }

@@ -43,6 +43,16 @@ export class CreationStore {
   private _lastUserMessage = signal<string>('');
   private _agenticWelcomeShown = signal(false);
 
+  // Image upload signals
+  private _uploadedImage = signal<{ base64: string; mimeType: string } | null>(null);
+
+  // Live preview data for character card
+  private _livePreviewData = signal<Record<string, any>>({});
+
+  // Universe selection mode
+  private _showUniverseSelector = signal(false);
+  private _pendingCharacterData = signal<Record<string, any>>({});
+
   // Public computed signals
   mode = computed(() => this._mode());
   phase = computed(() => this._phase());
@@ -69,6 +79,14 @@ export class CreationStore {
   validationErrors = computed(() => this._validationErrors());
   lastUserMessage = computed(() => this._lastUserMessage());
   agenticWelcomeShown = computed(() => this._agenticWelcomeShown());
+
+  // Image and live preview computed signals
+  uploadedImage = computed(() => this._uploadedImage());
+  livePreviewData = computed(() => this._livePreviewData());
+
+  // Universe selector computed signals
+  showUniverseSelector = computed(() => this._showUniverseSelector());
+  pendingCharacterData = computed(() => this._pendingCharacterData());
 
   // Computed: whether confirmation is ready (no errors)
   canConfirm = computed(() =>
@@ -169,6 +187,12 @@ export class CreationStore {
     this._validationErrors.set([]);
     this._lastUserMessage.set('');
     this._agenticWelcomeShown.set(false);
+    // Reset image and live preview
+    this._uploadedImage.set(null);
+    this._livePreviewData.set({});
+    // Reset universe selector
+    this._showUniverseSelector.set(false);
+    this._pendingCharacterData.set({});
   }
 
   // ============================================
@@ -225,6 +249,41 @@ export class CreationStore {
     this._validationWarnings.set([]);
     this._validationErrors.set([]);
     this._phase.set('adjusting');
+  }
+
+  // Image upload methods
+  setUploadedImage(image: { base64: string; mimeType: string } | null): void {
+    this._uploadedImage.set(image);
+  }
+
+  clearUploadedImage(): void {
+    this._uploadedImage.set(null);
+  }
+
+  // Live preview data methods
+  updateLivePreviewData(key: string, value: any): void {
+    this._livePreviewData.update(data => ({ ...data, [key]: value }));
+  }
+
+  setLivePreviewData(data: Record<string, any>): void {
+    this._livePreviewData.set(data);
+  }
+
+  clearLivePreviewData(): void {
+    this._livePreviewData.set({});
+  }
+
+  // Universe selector methods
+  setShowUniverseSelector(value: boolean): void {
+    this._showUniverseSelector.set(value);
+  }
+
+  setPendingCharacterData(data: Record<string, any>): void {
+    this._pendingCharacterData.set(data);
+  }
+
+  clearPendingCharacterData(): void {
+    this._pendingCharacterData.set({});
   }
 
   // Serialize conversation for AI context

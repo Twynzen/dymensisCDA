@@ -54,16 +54,6 @@ import { Universe } from '../../../core/models';
           <div class="universe-list">
             @for (universe of universeStore.userUniverses(); track universe.id) {
               <div class="universe-card" @fadeIn (click)="viewUniverse(universe)">
-                <div class="card-corner tl"></div>
-                <div class="card-corner tr"></div>
-                <div class="card-corner bl"></div>
-                <div class="card-corner br"></div>
-
-                <div class="card-header">
-                  <span class="card-type">UNI</span>
-                  <span class="card-id">{{ (universe.id?.slice(0, 6) || '').toUpperCase() }}</span>
-                </div>
-
                 <div class="card-content">
                   <div class="universe-thumb">
                     @if (universe.coverImage) {
@@ -120,16 +110,6 @@ import { Universe } from '../../../core/models';
           <div class="universe-list">
             @for (universe of publicUniverses(); track universe.id) {
               <div class="universe-card public" @fadeIn (click)="viewUniverse(universe)">
-                <div class="card-corner tl"></div>
-                <div class="card-corner tr"></div>
-                <div class="card-corner bl"></div>
-                <div class="card-corner br"></div>
-
-                <div class="card-header">
-                  <span class="card-type public">PUB</span>
-                  <span class="card-id">{{ (universe.id?.slice(0, 6) || '').toUpperCase() }}</span>
-                </div>
-
                 <div class="card-content">
                   <div class="universe-thumb">
                     @if (universe.coverImage) {

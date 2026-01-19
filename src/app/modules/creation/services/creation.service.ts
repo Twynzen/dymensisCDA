@@ -679,6 +679,192 @@ export class CreationService {
     this.log(`Found ${universes.length} available universes`);
   }
 
+  // ============================================
+  // UNIVERSE VALIDATION METHODS (Required for characters)
+  // ============================================
+
+  /**
+   * Checks if a universe has been selected for character creation
+   */
+  private hasUniverseSelected(): boolean {
+    const selectedId = this.creationStore.selectedUniverseId();
+    const selectedUniverse = this.collectedData['selectedUniverse'];
+    const universeId = this.collectedData['universeId'];
+
+    return !!(selectedId || selectedUniverse || universeId);
+  }
+
+  /**
+   * Checks if the user's message contains a universe selection and handles it
+   */
+  private async checkAndHandleUniverseSelection(message: string): Promise<boolean> {
+    const universes = this.universeStore.allUniverses();
+    if (universes.length === 0) return false;
+
+    const lowerMessage = message.toLowerCase();
+
+    // Check if user selected a universe by name
+    for (const universe of universes) {
+      if (lowerMessage.includes(universe.name.toLowerCase())) {
+        this.log(`Universe selected from message: ${universe.name}`);
+        this.selectUniverse(universe);
+        return true;
+      }
+    }
+
+    // Check for numbered selection (e.g., "1", "el primero", "opción 2")
+    const numberMatch = message.match(/\b(\d+)\b/);
+    const ordinalMatch = message.match(/\b(primer[oa]?|segund[oa]?|tercer[oa]?|cuart[oa]?|quint[oa]?)\b/i);
+
+    let selectedIndex = -1;
+
+    if (numberMatch) {
+      selectedIndex = parseInt(numberMatch[1], 10) - 1;
+    } else if (ordinalMatch) {
+      const ordinals: Record<string, number> = {
+        'primero': 0, 'primera': 0, 'primer': 0,
+        'segundo': 1, 'segunda': 1,
+        'tercero': 2, 'tercera': 2, 'tercer': 2,
+        'cuarto': 3, 'cuarta': 3,
+        'quinto': 4, 'quinta': 4
+      };
+      selectedIndex = ordinals[ordinalMatch[1].toLowerCase()] ?? -1;
+    }
+
+    if (selectedIndex >= 0 && selectedIndex < universes.length) {
+      const selectedUniverse = universes[selectedIndex];
+      this.log(`Universe selected by index ${selectedIndex}: ${selectedUniverse.name}`);
+      this.selectUniverse(selectedUniverse);
+      return true;
+    }
+
+    return false;
+  }
+
+  /**
+   * Selects a universe and updates all relevant stores
+   */
+  private selectUniverse(universe: Universe): void {
+    this.creationStore.setSelectedUniverseId(universe.id ?? null);
+    this.collectedData['selectedUniverse'] = universe;
+    this.collectedData['universeId'] = universe.id;
+    this.creationStore.updateContext('selectedUniverse', universe);
+    this.creationStore.updateLivePreviewData('selectedUniverse', universe);
+
+    // Check if we have a pending character name
+    const pendingName = this.collectedData['pendingName'];
+
+    // Build stats list
+    const statNames = Object.values(universe.statDefinitions || {}).map(s => s.name).join(', ');
+
+    let message = `✓ **${universe.name}** seleccionado.`;
+
+    if (statNames) {
+      message += `\n\nEste universo tiene las siguientes estadísticas: ${statNames}.`;
+    }
+
+    if (pendingName) {
+      // We already have a name, move the pending data to actual data
+      this.collectedData['name'] = pendingName;
+      this.creationStore.updateLivePreviewData('name', pendingName);
+      delete this.collectedData['pendingName'];
+      message += `\n\n**${pendingName}** vivirá en este universo. ¿Qué más quieres contarme sobre él/ella?`;
+    } else {
+      message += `\n\n¿Cómo se llama tu personaje?`;
+    }
+
+    this.creationStore.addMessage({
+      role: 'assistant',
+      content: message
+    });
+  }
+
+  /**
+   * Prompts user to select a universe before creating a character
+   */
+  private async promptUniverseSelection(originalMessage: string): Promise<void> {
+    const universes = this.universeStore.allUniverses();
+
+    if (universes.length === 0) {
+      // No universes available - suggest creating one first
+      this.creationStore.addMessage({
+        role: 'assistant',
+        content: `Para crear un personaje necesitas primero tener un universo donde vivirá.\n\n¿Te gustaría **crear un universo** primero? Puedo ayudarte a crearlo rápidamente.`
+      });
+      this.creationStore.setSuggestedActions([
+        'Sí, crear un universo primero',
+        'Usar un universo predeterminado'
+      ]);
+      return;
+    }
+
+    // Extract character info from original message for later use
+    const extraction = this.intentDetector.extractAllFields(originalMessage, 'character', 'es');
+
+    // Save extracted data for later
+    const pendingData: Record<string, any> = {};
+    if (extraction.fields['name']) {
+      pendingData['name'] = extraction.fields['name'];
+      this.collectedData['pendingName'] = extraction.fields['name'];
+      this.creationStore.updateLivePreviewData('name', extraction.fields['name']);
+    }
+    if (extraction.fields['stats']) {
+      pendingData['stats'] = extraction.fields['stats'];
+    }
+    this.creationStore.setPendingCharacterData(pendingData);
+
+    const characterName = extraction.fields['name'] ? ` a **${extraction.fields['name']}**` : ' a tu personaje';
+
+    // Add message and show universe selector
+    this.creationStore.addMessage({
+      role: 'assistant',
+      content: `Para crear${characterName} necesito saber en qué **universo** vivirá.`
+    });
+
+    // Show visual universe selector
+    this.creationStore.setShowUniverseSelector(true);
+    this.creationStore.setAvailableUniverses(universes);
+  }
+
+  /**
+   * Called when user selects a universe from the visual selector
+   */
+  onUniverseSelectedFromSelector(universe: Universe): void {
+    this.log(`Universe selected from selector: ${universe.name}`);
+
+    // Hide selector
+    this.creationStore.setShowUniverseSelector(false);
+
+    // Get pending data
+    const pendingData = this.creationStore.pendingCharacterData();
+
+    // Select the universe
+    this.selectUniverse(universe);
+
+    // If we have pending stats, apply them
+    if (pendingData['stats']) {
+      this.collectedData['stats'] = pendingData['stats'];
+      this.creationStore.updateLivePreviewData('stats', pendingData['stats']);
+    }
+
+    // Clear pending data
+    this.creationStore.clearPendingCharacterData();
+  }
+
+  /**
+   * Called when user wants to create a new universe instead
+   */
+  onCreateUniverseRequested(): void {
+    this.log('User requested to create universe first');
+    this.creationStore.setShowUniverseSelector(false);
+    // Save current mode and switch to universe creation
+    this.creationStore.addMessage({
+      role: 'assistant',
+      content: '¡Perfecto! Vamos a crear un universo primero. ¿Cómo quieres llamarlo y qué temática tendrá?'
+    });
+    this.creationStore.setMode('universe');
+  }
+
   /**
    * Processes user message in agentic mode with bulk extraction
    */
@@ -721,6 +907,16 @@ export class CreationService {
     } else {
       targetType = currentMode as 'universe' | 'character';
       this.log(`Using existing mode: ${targetType}`);
+    }
+
+    // IMPORTANT: Check if character creation requires universe selection first
+    if (targetType === 'character' && !this.hasUniverseSelected()) {
+      const universeSelectedFromMessage = await this.checkAndHandleUniverseSelection(message);
+      if (!universeSelectedFromMessage) {
+        // No universe selected, prompt user to select one
+        await this.promptUniverseSelection(message);
+        return;
+      }
     }
 
     // Perform bulk extraction
@@ -771,6 +967,8 @@ export class CreationService {
         if (!this._filledFields.includes(key)) {
           this._filledFields.push(key);
         }
+        // Also update live preview data for real-time card updates
+        this.creationStore.updateLivePreviewData(key, value);
       }
     }
     this.creationStore.updateContext('collectedData', this.collectedData);

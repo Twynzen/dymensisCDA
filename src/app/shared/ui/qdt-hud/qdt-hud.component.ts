@@ -17,27 +17,12 @@ import { CommonModule } from '@angular/common';
   template: `
     <div class="qdt-hud">
       <div class="qdt-hud-left">
-        <div class="rec-line">
-          @if (isRecording()) {
-            <span class="rec-dot"></span>
-            <span class="rec-text">REC</span>
-          }
-          <span class="separator">|</span>
-          <span class="cam-id">{{ cameraId() }}</span>
-        </div>
         <div class="date">{{ formattedDate() }}</div>
         <div class="time">{{ formattedTime() }}</div>
       </div>
 
       <div class="qdt-hud-right">
         <div class="sector">{{ sector() }}</div>
-        <div class="mode">
-          <span class="mode-icon">&#9673;</span>
-          {{ mode() }}
-        </div>
-        @if (restricted()) {
-          <div class="restricted">&#9632; RESTRICTED</div>
-        }
       </div>
     </div>
   `,

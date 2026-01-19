@@ -1,7 +1,7 @@
 import { Component, OnInit, inject, signal, computed, ViewChild, ElementRef, AfterViewChecked } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { IonicModule } from '@ionic/angular';
+import { IonicModule, AlertController } from '@ionic/angular';
 import { CreationStore } from '../data-access/creation.store';
 import { CreationService } from '../services/creation.service';
 import { ChatMessageComponent } from '../ui/chat-message.component';
@@ -23,6 +23,8 @@ import { UniverseStore } from '../../universes/data-access/universe.store';
 import { CharacterStore } from '../../characters/data-access/character.store';
 import { Universe, Character, CharacterSkill } from '../../../core/models';
 import { AgenticAction } from '../models/agentic-action.model';
+import { LiveCharacterCardComponent, LivePreviewData } from '../ui/live-character-card.component';
+import { UniverseSelectorComponent } from '../ui/universe-selector.component';
 
 export type CreationMode = 'idle' | 'universe' | 'character' | 'action';
 export type CreationApproach = 'manual' | 'ai';
@@ -46,7 +48,9 @@ export type CreationApproach = 'manual' | 'ai';
     AgenticWelcomeComponent,
     AgenticActionsComponent,
     ConfirmationFlowComponent,
-    HelpTooltipComponent
+    HelpTooltipComponent,
+    LiveCharacterCardComponent,
+    UniverseSelectorComponent
   ],
   template: `
     <ion-header>
@@ -295,6 +299,25 @@ export type CreationApproach = 'manual' | 'ai';
     @if (creationStore.mode() !== 'idle' && creationApproach() === 'ai') {
       <ion-footer>
         <ion-toolbar>
+          <!-- Live Character Card (shows when we have name + universe) -->
+          @if (shouldShowLiveCard()) {
+            <app-live-character-card
+              [data]="getLivePreviewData()"
+              [completenessPercent]="creationStore.extractionProgress()"
+            ></app-live-character-card>
+          }
+
+          <!-- Universe Selector (shows when character needs universe) -->
+          @if (creationStore.showUniverseSelector()) {
+            <app-universe-selector
+              [universes]="creationStore.availableUniverses()"
+              [title]="'Elige un universo para tu personaje:'"
+              [showCreateOption]="true"
+              (universeSelected)="onUniverseSelected($event)"
+              (createNew)="onCreateUniverseRequested()"
+            ></app-universe-selector>
+          }
+
           <!-- Agentic Actions (replaces quick actions with smarter actions) -->
           @if (creationStore.visibleActions().length > 0) {
             <app-agentic-actions
@@ -320,10 +343,24 @@ export type CreationApproach = 'manual' | 'ai';
               (exampleSelected)="onHelpExampleSelected($event)"
             ></app-help-tooltip>
 
-            <!-- Botón de imagen -->
-            <ion-button fill="clear" class="attach-button" (click)="triggerImageUpload()">
-              <ion-icon slot="icon-only" name="image-outline"></ion-icon>
-            </ion-button>
+            <!-- Botón de imagen o preview de imagen subida -->
+            @if (creationStore.uploadedImage()) {
+              <div class="uploaded-image-preview">
+                <img [src]="creationStore.uploadedImage()?.base64" alt="Preview" />
+                <div class="image-preview-actions">
+                  <ion-button fill="clear" size="small" (click)="triggerImageUpload()">
+                    <ion-icon slot="icon-only" name="refresh-outline"></ion-icon>
+                  </ion-button>
+                  <ion-button fill="clear" size="small" color="danger" (click)="clearUploadedImage()">
+                    <ion-icon slot="icon-only" name="close-outline"></ion-icon>
+                  </ion-button>
+                </div>
+              </div>
+            } @else {
+              <ion-button fill="clear" class="attach-button" (click)="triggerImageUpload()">
+                <ion-icon slot="icon-only" name="image-outline"></ion-icon>
+              </ion-button>
+            }
             <input
               type="file"
               #fileInput
@@ -534,14 +571,24 @@ export type CreationApproach = 'manual' | 'ai';
       flex-direction: column;
       padding: 16px;
       padding-bottom: 20px;
+      min-height: 100%;
     }
 
     .scroll-anchor {
       height: 1px;
+      flex-shrink: 0;
+    }
+
+    ion-footer {
+      --background: var(--ion-background-color);
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
     }
 
     ion-footer ion-toolbar {
       padding: 8px 12px;
+      --min-height: auto;
+      --padding-top: 0;
+      --padding-bottom: 0;
     }
 
     .input-container {
@@ -551,6 +598,8 @@ export type CreationApproach = 'manual' | 'ai';
       background: rgba(255, 255, 255, 0.05);
       border-radius: 24px;
       padding: 4px 4px 4px 8px;
+      max-height: 150px;
+      overflow: hidden;
     }
 
     .attach-button {
@@ -568,14 +617,57 @@ export type CreationApproach = 'manual' | 'ai';
       --padding-top: 8px;
       --padding-bottom: 8px;
       font-size: 15px;
-      max-height: 120px;
+      max-height: 100px;
+      min-height: 36px;
       flex: 1;
+      overflow-y: auto;
     }
 
     .input-container ion-button {
       --padding-start: 8px;
       --padding-end: 8px;
       margin: 0;
+    }
+
+    /* Uploaded image preview styles */
+    .uploaded-image-preview {
+      position: relative;
+      width: 48px;
+      height: 48px;
+      border-radius: 8px;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+
+    .uploaded-image-preview img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .uploaded-image-preview .image-preview-actions {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.6);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 2px;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+
+    .uploaded-image-preview:hover .image-preview-actions {
+      opacity: 1;
+    }
+
+    .uploaded-image-preview .image-preview-actions ion-button {
+      --padding-start: 4px;
+      --padding-end: 4px;
+      --color: white;
     }
   `]
 })
@@ -586,6 +678,7 @@ export class CreationHubComponent implements OnInit, AfterViewChecked {
   authService = inject(AuthService);
   universeStore = inject(UniverseStore);
   private characterStore = inject(CharacterStore);
+  private alertController = inject(AlertController);
 
   @ViewChild('contentArea') contentArea!: ElementRef;
   @ViewChild('scrollAnchor') scrollAnchor!: ElementRef;
@@ -642,11 +735,17 @@ export class CreationHubComponent implements OnInit, AfterViewChecked {
     }
   }
 
-  startCreation(mode: 'universe' | 'character' | 'action'): void {
+  async startCreation(mode: 'universe' | 'character' | 'action'): Promise<void> {
     // Set the approach based on selection
     this.creationApproach.set(this.selectedApproach);
 
     if (this.selectedApproach === 'ai') {
+      // Show beta warning modal first
+      const shouldContinue = await this.showAIBetaWarning();
+      if (!shouldContinue) {
+        return;
+      }
+
       // AI mode - check if model is ready
       if (!this.webLLMService.isReady() && mode !== 'action') {
         // Fallback to manual mode if AI not ready
@@ -660,6 +759,58 @@ export class CreationHubComponent implements OnInit, AfterViewChecked {
     }
 
     this.shouldScroll = true;
+  }
+
+  /**
+   * Shows a beta warning alert for AI creation mode
+   */
+  private async showAIBetaWarning(): Promise<boolean> {
+    // Check if user has already dismissed the warning this session
+    const dismissedKey = 'ai_beta_warning_dismissed';
+    if (sessionStorage.getItem(dismissedKey)) {
+      return true;
+    }
+
+    const alert = await this.alertController.create({
+      header: 'Modo IA en Desarrollo',
+      subHeader: 'Funcionalidad Experimental',
+      message: `
+        <div style="text-align: left;">
+          <p>Este flujo de creación con <strong>Asistente IA</strong> está actualmente en desarrollo activo.</p>
+          <br>
+          <p><strong>Es posible que encuentres:</strong></p>
+          <ul style="margin-left: 16px;">
+            <li>Respuestas inesperadas</li>
+            <li>Errores de extracción de datos</li>
+            <li>Comportamientos inconsistentes</li>
+          </ul>
+          <br>
+          <p>Por favor, <strong>reporta cualquier error</strong> que encuentres para ayudarnos a mejorar.</p>
+          <br>
+          <p style="color: var(--ion-color-medium);">Gracias por probar esta funcionalidad experimental.</p>
+        </div>
+      `,
+      cssClass: 'beta-warning-alert',
+      buttons: [
+        {
+          text: 'Cancelar',
+          role: 'cancel',
+          cssClass: 'secondary'
+        },
+        {
+          text: 'Entendido, continuar',
+          role: 'confirm',
+          handler: () => {
+            // Remember that user has seen the warning this session
+            sessionStorage.setItem(dismissedKey, 'true');
+          }
+        }
+      ]
+    });
+
+    await alert.present();
+    const { role } = await alert.onDidDismiss();
+    return role === 'confirm';
   }
 
   resetToIdle(): void {
@@ -841,12 +992,88 @@ export class CreationHubComponent implements OnInit, AfterViewChecked {
     const reader = new FileReader();
     reader.onload = async () => {
       const base64 = reader.result as string;
+      // Store the uploaded image for preview
+      this.creationStore.setUploadedImage({ base64, mimeType: file.type });
+      // Also update live preview data
+      this.creationStore.updateLivePreviewData('avatar', base64);
       await this.creationService.processImage(base64, file.type);
       this.shouldScroll = true;
     };
     reader.readAsDataURL(file);
 
     input.value = '';
+  }
+
+  clearUploadedImage(): void {
+    this.creationStore.clearUploadedImage();
+    this.creationStore.updateLivePreviewData('avatar', null);
+  }
+
+  // ============================================
+  // LIVE PREVIEW CARD METHODS
+  // ============================================
+
+  /**
+   * Determines if the live character card should be shown
+   * Only show when we have a name AND either a selected universe or we're in character mode
+   */
+  shouldShowLiveCard(): boolean {
+    const mode = this.creationStore.mode();
+    if (mode !== 'character') return false;
+
+    const previewData = this.creationStore.livePreviewData();
+    const context = this.creationStore.conversationContext();
+
+    // Show if we have name and universe
+    const hasName = !!(previewData['name'] || context['collectedData']?.name);
+    const hasUniverse = !!(previewData['selectedUniverse'] ||
+                          context['collectedData']?.selectedUniverse ||
+                          this.creationStore.selectedUniverseId());
+
+    return hasName && hasUniverse;
+  }
+
+  /**
+   * Gets the data for the live preview card
+   */
+  getLivePreviewData(): LivePreviewData {
+    const previewData = this.creationStore.livePreviewData();
+    const context = this.creationStore.conversationContext();
+    const collectedData = context['collectedData'] || {};
+
+    // Merge data from multiple sources, giving priority to livePreviewData
+    const selectedUniverseId = this.creationStore.selectedUniverseId();
+    let selectedUniverse = previewData['selectedUniverse'] || collectedData.selectedUniverse;
+
+    // If we have an ID but no universe object, try to find it
+    if (!selectedUniverse && selectedUniverseId) {
+      selectedUniverse = this.universeStore.allUniverses().find(u => u.id === selectedUniverseId);
+    }
+
+    return {
+      name: previewData['name'] || collectedData.name,
+      avatar: previewData['avatar'] || collectedData.avatarUrl || this.creationStore.uploadedImage()?.base64,
+      description: previewData['description'] || collectedData.description,
+      backstory: previewData['backstory'] || collectedData.backstory,
+      class: previewData['class'] || collectedData.class,
+      stats: previewData['stats'] || collectedData.stats,
+      selectedUniverse,
+      universeId: selectedUniverseId || collectedData.universeId
+    };
+  }
+
+  // ============================================
+  // UNIVERSE SELECTOR HANDLERS
+  // ============================================
+
+  onUniverseSelected(universe: Universe): void {
+    this.creationService.onUniverseSelectedFromSelector(universe);
+    this.shouldScroll = true;
+  }
+
+  onCreateUniverseRequested(): void {
+    this.creationService.onCreateUniverseRequested();
+    this.shouldScroll = true;
   }
 
   // ============================================
