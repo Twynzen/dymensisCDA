@@ -15,7 +15,7 @@ import { IonicModule } from '@ionic/angular';
           }
           <span class="stat-name">{{ name() }}</span>
           @if (abbreviation()) {
-            <span class="stat-abbr">({{ abbreviation() }})</span>
+            <span class="stat-abbr">[{{ abbreviation() }}]</span>
           }
         </div>
         <div class="stat-value" [class.highlight]="highlight()">
@@ -43,70 +43,76 @@ import { IonicModule } from '@ionic/angular';
   `,
   styles: [`
     .stat-bar-container {
-      margin-bottom: 12px;
+      margin-bottom: 16px;
     }
 
     .stat-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 4px;
+      margin-bottom: 6px;
     }
 
     .stat-info {
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 8px;
     }
 
     .stat-info ion-icon {
-      font-size: 18px;
-      opacity: 0.8;
+      font-size: 16px;
+      color: var(--qdt-text-muted);
     }
 
     .stat-name {
+      font-size: 11px;
       font-weight: 500;
-      font-size: 14px;
+      letter-spacing: 0.1em;
+      color: var(--qdt-text-secondary);
+      text-transform: uppercase;
     }
 
     .stat-abbr {
-      font-size: 12px;
-      opacity: 0.6;
+      font-size: 9px;
+      letter-spacing: 0.05em;
+      color: var(--qdt-text-subtle);
     }
 
     .stat-value {
-      font-family: 'Roboto Mono', monospace;
-      font-size: 14px;
+      font-family: var(--qdt-font-mono);
+      font-size: 12px;
+      font-variant-numeric: tabular-nums;
       transition: all 0.3s ease;
     }
 
     .stat-value.highlight {
       transform: scale(1.1);
-      color: var(--ion-color-primary);
-      text-shadow: 0 0 8px var(--ion-color-primary);
+      color: var(--qdt-text-primary);
+      text-shadow: 0 0 8px var(--qdt-border-focus);
     }
 
     .stat-value .current {
-      font-weight: 600;
+      color: var(--qdt-text-primary);
+      font-weight: 500;
     }
 
     .stat-value .separator,
     .stat-value .max {
-      opacity: 0.5;
+      color: var(--qdt-text-subtle);
     }
 
     .bar-container {
       position: relative;
-      height: 8px;
-      background: rgba(255, 255, 255, 0.1);
-      border-radius: 4px;
+      height: 6px;
+      background: var(--qdt-bg-tertiary);
+      border: 1px solid var(--qdt-border-subtle);
       overflow: hidden;
     }
 
     .bar-fill {
       height: 100%;
-      border-radius: 4px;
       transition: width 0.3s ease;
+      opacity: 0.8;
     }
 
     .bar-fill.animated {
@@ -115,24 +121,24 @@ import { IonicModule } from '@ionic/angular';
 
     .change-indicator {
       position: absolute;
-      right: 4px;
+      right: 6px;
       top: 50%;
       transform: translateY(-50%);
-      font-size: 11px;
+      font-size: 9px;
       font-weight: 600;
+      letter-spacing: 0.05em;
       padding: 1px 4px;
-      border-radius: 3px;
       animation: fadeInOut 2s ease-in-out;
     }
 
     .change-indicator.positive {
-      background: rgba(76, 175, 80, 0.3);
-      color: #4CAF50;
+      background: rgba(22, 163, 74, 0.3);
+      color: var(--qdt-accent-green);
     }
 
     .change-indicator.negative {
-      background: rgba(244, 67, 54, 0.3);
-      color: #F44336;
+      background: rgba(220, 38, 38, 0.3);
+      color: var(--qdt-accent-red);
     }
 
     @keyframes fadeInOut {
@@ -150,7 +156,7 @@ export class StatBarComponent {
   icon = signal('');
   value = signal(0);
   maxValue = signal(100);
-  color = signal('#4CAF50');
+  color = signal('#71717a');
   animated = signal(true);
   showChange = signal(false);
   change = signal(0);

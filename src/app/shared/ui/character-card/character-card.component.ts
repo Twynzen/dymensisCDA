@@ -8,12 +8,19 @@ import { Character, StatDefinition } from '../../../core/models';
   standalone: true,
   imports: [CommonModule, IonicModule],
   template: `
-    <ion-card
-      class="character-card"
-      [style.--card-bg]="backgroundColor()"
-      (click)="onCardClick()"
-      button
-    >
+    <div class="character-card" (click)="onCardClick()">
+      <!-- Corner brackets -->
+      <div class="corner-bracket top-left"></div>
+      <div class="corner-bracket top-right"></div>
+      <div class="corner-bracket bottom-left"></div>
+      <div class="corner-bracket bottom-right"></div>
+
+      <!-- Header badge -->
+      <div class="card-header-badge">
+        <span class="card-type">CHR</span>
+        <span class="card-id">{{ characterId() }}</span>
+      </div>
+
       <div class="card-content">
         <div class="avatar-section">
           @if (avatarUrl()) {
@@ -26,13 +33,18 @@ import { Character, StatDefinition } from '../../../core/models';
           <div class="awakening-badge" [class]="'rank-' + awakening()">
             {{ awakening() }}
           </div>
+          <div class="avatar-scanline"></div>
         </div>
 
         <div class="info-section">
-          <h2 class="character-name">{{ characterName() }}</h2>
+          <div class="name-row">
+            <h2 class="character-name">{{ characterName() }}</h2>
+            <div class="status-dot"></div>
+          </div>
+
           <div class="level-info">
-            <ion-icon name="star"></ion-icon>
-            <span>Nivel {{ level() }}</span>
+            <span class="level-label">LVL</span>
+            <span class="level-value">{{ level() }}</span>
           </div>
 
           <div class="stats-preview">
@@ -43,30 +55,104 @@ import { Character, StatDefinition } from '../../../core/models';
               </div>
             }
           </div>
+
+          <div class="card-timestamp">
+            {{ timestamp() }}
+          </div>
         </div>
 
-        <ion-button
-          fill="clear"
+        <button
           class="more-btn"
           (click)="onMoreClick($event)"
         >
-          <ion-icon slot="icon-only" name="ellipsis-vertical"></ion-icon>
-        </ion-button>
+          <ion-icon name="ellipsis-vertical"></ion-icon>
+        </button>
       </div>
-    </ion-card>
+    </div>
   `,
   styles: [`
     .character-card {
-      --background: var(--card-bg, #1a1a2e);
+      position: relative;
+      background: var(--qdt-bg-secondary);
+      border: 1px solid var(--qdt-border-subtle);
       margin: 8px;
-      border-radius: 16px;
-      overflow: hidden;
+      padding: 12px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .character-card:hover {
+      border-color: var(--qdt-border-default);
+      background: var(--qdt-bg-tertiary);
+    }
+
+    .character-card:active {
+      transform: scale(0.98);
+    }
+
+    /* Corner brackets */
+    .corner-bracket {
+      position: absolute;
+      width: 12px;
+      height: 12px;
+      border-color: var(--qdt-text-subtle);
+      border-style: solid;
+      border-width: 0;
+      opacity: 0.5;
+    }
+
+    .corner-bracket.top-left {
+      top: 4px;
+      left: 4px;
+      border-top-width: 1px;
+      border-left-width: 1px;
+    }
+
+    .corner-bracket.top-right {
+      top: 4px;
+      right: 4px;
+      border-top-width: 1px;
+      border-right-width: 1px;
+    }
+
+    .corner-bracket.bottom-left {
+      bottom: 4px;
+      left: 4px;
+      border-bottom-width: 1px;
+      border-left-width: 1px;
+    }
+
+    .corner-bracket.bottom-right {
+      bottom: 4px;
+      right: 4px;
+      border-bottom-width: 1px;
+      border-right-width: 1px;
+    }
+
+    /* Header badge */
+    .card-header-badge {
+      position: absolute;
+      top: 8px;
+      right: 40px;
+      display: flex;
+      gap: 6px;
+      font-family: var(--qdt-font-mono);
+      font-size: 9px;
+      letter-spacing: 0.1em;
+    }
+
+    .card-type {
+      color: var(--qdt-accent-amber);
+      font-weight: 600;
+    }
+
+    .card-id {
+      color: var(--qdt-text-subtle);
     }
 
     .card-content {
       display: flex;
       align-items: center;
-      padding: 12px;
       gap: 12px;
     }
 
@@ -78,51 +164,67 @@ import { Character, StatDefinition } from '../../../core/models';
     .avatar {
       width: 64px;
       height: 64px;
-      border-radius: 50%;
       object-fit: cover;
-      border: 2px solid rgba(255, 255, 255, 0.2);
+      border: 1px solid var(--qdt-border-default);
+      filter: grayscale(20%) contrast(1.1);
     }
 
     .avatar-placeholder {
       width: 64px;
       height: 64px;
-      border-radius: 50%;
-      background: rgba(255, 255, 255, 0.1);
+      background: var(--qdt-bg-tertiary);
       display: flex;
       align-items: center;
       justify-content: center;
-      border: 2px solid rgba(255, 255, 255, 0.2);
+      border: 1px solid var(--qdt-border-default);
     }
 
     .avatar-placeholder ion-icon {
-      font-size: 32px;
-      opacity: 0.5;
+      font-size: 28px;
+      color: var(--qdt-text-subtle);
+    }
+
+    .avatar-scanline {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0, 0, 0, 0.1) 2px,
+        rgba(0, 0, 0, 0.1) 4px
+      );
+      pointer-events: none;
     }
 
     .awakening-badge {
       position: absolute;
       bottom: -4px;
       right: -4px;
-      width: 24px;
-      height: 24px;
-      border-radius: 50%;
+      width: 22px;
+      height: 22px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 10px;
+      font-family: var(--qdt-font-mono);
+      font-size: 9px;
       font-weight: 700;
-      background: #333;
-      border: 2px solid var(--card-bg, #1a1a2e);
+      background: var(--qdt-bg-tertiary);
+      border: 1px solid var(--qdt-border-default);
+      letter-spacing: 0;
     }
 
-    .rank-E { background: #9E9E9E; }
-    .rank-D { background: #8BC34A; }
-    .rank-C { background: #03A9F4; }
-    .rank-B { background: #9C27B0; }
-    .rank-A { background: #FF5722; }
+    .rank-E { background: #52525b; color: #a1a1aa; }
+    .rank-D { background: #365314; color: #84cc16; }
+    .rank-C { background: #164e63; color: #22d3ee; }
+    .rank-B { background: #581c87; color: #a855f7; }
+    .rank-A { background: #7c2d12; color: #fb923c; }
     .rank-S, .rank-SS, .rank-SSS {
-      background: linear-gradient(135deg, #FFD700, #FFA500);
-      color: #000;
+      background: #78350f;
+      color: #fbbf24;
     }
 
     .info-section {
@@ -130,57 +232,115 @@ import { Character, StatDefinition } from '../../../core/models';
       min-width: 0;
     }
 
+    .name-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+
     .character-name {
-      font-size: 18px;
-      font-weight: 600;
-      margin: 0 0 4px 0;
+      font-family: var(--qdt-font-mono);
+      font-size: 14px;
+      font-weight: 500;
+      letter-spacing: 0.05em;
+      margin: 0;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      color: var(--qdt-text-primary);
+      text-transform: uppercase;
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      background: var(--qdt-accent-green);
+      border-radius: 50%;
+      flex-shrink: 0;
+      animation: qdt-pulse 2s ease-in-out infinite;
     }
 
     .level-info {
       display: flex;
       align-items: center;
       gap: 4px;
-      font-size: 13px;
-      opacity: 0.7;
+      font-family: var(--qdt-font-mono);
+      font-size: 10px;
       margin-bottom: 8px;
     }
 
-    .level-info ion-icon {
-      font-size: 14px;
-      color: #FFD700;
+    .level-label {
+      color: var(--qdt-text-subtle);
+      letter-spacing: 0.1em;
+    }
+
+    .level-value {
+      color: var(--qdt-text-secondary);
+      font-weight: 600;
     }
 
     .stats-preview {
       display: flex;
-      gap: 8px;
+      gap: 6px;
       flex-wrap: wrap;
+      margin-bottom: 8px;
     }
 
     .mini-stat {
       display: flex;
       align-items: center;
-      gap: 2px;
-      background: rgba(255, 255, 255, 0.1);
+      gap: 3px;
+      background: var(--qdt-bg-tertiary);
+      border: 1px solid var(--qdt-border-subtle);
       padding: 2px 6px;
-      border-radius: 4px;
-      font-size: 11px;
+      font-family: var(--qdt-font-mono);
+      font-size: 9px;
     }
 
     .stat-abbr {
-      font-weight: 600;
-      opacity: 0.7;
+      color: var(--qdt-text-subtle);
+      letter-spacing: 0.05em;
     }
 
     .stat-val {
-      font-family: 'Roboto Mono', monospace;
+      color: var(--qdt-text-secondary);
+      font-weight: 500;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .card-timestamp {
+      font-family: var(--qdt-font-mono);
+      font-size: 9px;
+      color: var(--qdt-text-subtle);
+      letter-spacing: 0.05em;
     }
 
     .more-btn {
-      --color: rgba(255, 255, 255, 0.5);
-      margin: 0;
+      background: transparent;
+      border: 1px solid var(--qdt-border-subtle);
+      padding: 8px;
+      cursor: pointer;
+      color: var(--qdt-text-muted);
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .more-btn:hover {
+      background: var(--qdt-bg-tertiary);
+      border-color: var(--qdt-border-default);
+      color: var(--qdt-text-primary);
+    }
+
+    .more-btn ion-icon {
+      font-size: 18px;
+    }
+
+    @keyframes qdt-pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
     }
   `]
 })
@@ -193,9 +353,20 @@ export class CharacterCardComponent {
 
   characterName = computed(() => this._character()?.name ?? '');
   avatarUrl = computed(() => this._character()?.avatar?.photoUrl ?? '');
-  backgroundColor = computed(() => this._character()?.avatar?.backgroundColor ?? '#1a1a2e');
   level = computed(() => this._character()?.progression?.level ?? 1);
   awakening = computed(() => this._character()?.progression?.awakening ?? 'E');
+
+  characterId = computed(() => {
+    const id = this._character()?.id ?? '';
+    return id.slice(0, 6).toUpperCase();
+  });
+
+  timestamp = computed(() => {
+    const char = this._character();
+    if (!char?.createdAt) return 'NO DATA';
+    const date = char.createdAt instanceof Date ? char.createdAt : new Date(char.createdAt);
+    return date.toISOString().slice(0, 10).replace(/-/g, '.');
+  });
 
   topStats = computed(() => {
     const character = this._character();

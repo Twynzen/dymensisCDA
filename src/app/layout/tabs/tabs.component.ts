@@ -11,41 +11,60 @@ import { AuthService } from '../../core/services/auth.service';
     <ion-tabs>
       <ion-tab-bar slot="bottom">
         <ion-tab-button tab="characters">
-          <ion-icon name="people"></ion-icon>
-          <ion-label>Personajes</ion-label>
+          <ion-icon name="people-outline"></ion-icon>
+          <ion-label>SUJETOS</ion-label>
         </ion-tab-button>
 
         <ion-tab-button tab="universes">
           <ion-icon name="planet-outline"></ion-icon>
-          <ion-label>Universos</ion-label>
+          <ion-label>MUNDOS</ion-label>
         </ion-tab-button>
 
         <ion-tab-button tab="creation">
-          <ion-icon name="create-outline"></ion-icon>
-          <ion-label>Creación</ion-label>
+          <ion-icon name="terminal-outline"></ion-icon>
+          <ion-label>CREAR</ion-label>
         </ion-tab-button>
 
         <ion-tab-button (click)="showProfileMenu($event)">
-          <ion-icon name="person-circle"></ion-icon>
-          <ion-label>Perfil</ion-label>
+          <ion-icon name="person-circle-outline"></ion-icon>
+          <ion-label>PERFIL</ion-label>
         </ion-tab-button>
       </ion-tab-bar>
     </ion-tabs>
   `,
   styles: [`
     ion-tab-bar {
-      --background: rgba(26, 26, 46, 0.95);
-      --border: 1px solid rgba(255, 255, 255, 0.1);
+      --background: rgba(9, 9, 11, 0.95);
+      --border: 1px solid var(--qdt-border-subtle);
       backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      height: 56px;
     }
 
     ion-tab-button {
-      --color: rgba(255, 255, 255, 0.5);
-      --color-selected: var(--ion-color-primary);
+      --color: var(--qdt-text-subtle);
+      --color-selected: var(--qdt-text-primary);
+      font-family: var(--qdt-font-mono);
+      font-size: 9px;
+      letter-spacing: 0.1em;
     }
 
     ion-tab-button ion-icon {
-      font-size: 24px;
+      font-size: 20px;
+      margin-bottom: 2px;
+    }
+
+    ion-tab-button ion-label {
+      font-size: 9px;
+      letter-spacing: 0.08em;
+    }
+
+    ion-tab-button.tab-selected {
+      --color: var(--qdt-text-primary);
+    }
+
+    ion-tab-button.tab-selected ion-icon {
+      color: var(--qdt-text-primary);
     }
   `]
 })
@@ -61,17 +80,18 @@ export class TabsComponent {
     const user = this.authService.user();
 
     const alert = await this.alertController.create({
-      header: user?.displayName || 'Mi Perfil',
+      header: 'PERFIL DE USUARIO',
       subHeader: user?.email || '',
+      message: user?.displayName || 'Usuario sin nombre',
       buttons: [
         {
-          text: 'Ir al Inicio',
+          text: 'IR AL INICIO',
           handler: () => {
             this.router.navigate(['/home']);
           }
         },
         {
-          text: 'Cerrar Sesión',
+          text: 'CERRAR SESION',
           role: 'destructive',
           handler: async () => {
             await this.authService.signOut();
@@ -79,7 +99,7 @@ export class TabsComponent {
           }
         },
         {
-          text: 'Cancelar',
+          text: 'CANCELAR',
           role: 'cancel'
         }
       ]
