@@ -571,9 +571,10 @@ import { SkillIconComponent, SkillIconName } from '../../../shared/ui/skill-icon
       display: flex;
       align-items: center;
       justify-content: center;
-      margin-bottom: 24px;
+      margin-bottom: 28px;
       flex-wrap: wrap;
-      gap: 4px;
+      gap: 6px;
+      padding: 0 8px;
     }
 
     .step {
@@ -603,10 +604,11 @@ import { SkillIconComponent, SkillIconName } from '../../../shared/ui/skill-icon
     .step.completed .step-number { background: var(--ion-color-success); }
 
     .step-label {
-      font-size: 9px;
-      margin-top: 4px;
+      font-size: 10px;
+      margin-top: 6px;
       text-align: center;
-      max-width: 50px;
+      max-width: 64px;
+      line-height: 1.2;
     }
 
     .step-line {
@@ -630,14 +632,15 @@ import { SkillIconComponent, SkillIconName } from '../../../shared/ui/skill-icon
     }
 
     .form-section h2 {
-      margin: 0 0 4px 0;
+      margin: 0 0 8px 0;
       font-size: 20px;
     }
 
     .section-desc {
       color: var(--ion-color-medium);
-      margin: 0 0 16px 0;
+      margin: 0 0 20px 0;
       font-size: 14px;
+      line-height: 1.5;
     }
 
     .universe-grid {
@@ -660,8 +663,8 @@ import { SkillIconComponent, SkillIconName } from '../../../shared/ui/skill-icon
 
     .universe-card-layout {
       display: flex;
-      gap: 12px;
-      padding: 12px;
+      gap: 14px;
+      padding: 14px;
     }
 
     .universe-image-container {
@@ -752,25 +755,34 @@ import { SkillIconComponent, SkillIconName } from '../../../shared/ui/skill-icon
     }
 
     .traits-section {
-      margin-top: 16px;
+      margin-top: 24px;
+      padding-top: 16px;
+      border-top: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .traits-section ion-label {
+      display: block;
+      margin-bottom: 12px;
+      font-size: 14px;
+      font-weight: 500;
     }
 
     .traits-chips {
       display: flex;
       flex-wrap: wrap;
-      gap: 8px;
-      margin: 8px 0;
+      gap: 10px;
+      margin: 12px 0 16px 0;
     }
 
     .points-counter {
       display: flex;
       justify-content: center;
       align-items: center;
-      gap: 8px;
-      padding: 12px;
+      gap: 12px;
+      padding: 14px 16px;
       background: rgba(var(--ion-color-primary-rgb), 0.1);
       border-radius: 8px;
-      margin-bottom: 16px;
+      margin-bottom: 20px;
     }
 
     .points-counter.over-budget {
@@ -789,20 +801,20 @@ import { SkillIconComponent, SkillIconName } from '../../../shared/ui/skill-icon
     .stats-sliders {
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 14px;
     }
 
     .stat-slider {
       background: rgba(255,255,255,0.05);
-      padding: 12px;
+      padding: 14px 16px;
       border-radius: 8px;
     }
 
     .stat-info {
       display: flex;
       align-items: center;
-      gap: 8px;
-      margin-bottom: 4px;
+      gap: 10px;
+      margin-bottom: 8px;
     }
 
     .stat-info ion-icon {
@@ -926,22 +938,22 @@ import { SkillIconComponent, SkillIconName } from '../../../shared/ui/skill-icon
     }
 
     .avatar-upload-section, .background-color-section {
-      margin: 16px 0;
+      margin: 20px 0;
     }
 
     .section-label {
       display: block;
       font-size: 14px;
       font-weight: 500;
-      margin-bottom: 8px;
+      margin-bottom: 12px;
       color: var(--ion-color-medium);
     }
 
     .color-presets {
       display: flex;
       justify-content: center;
-      gap: 12px;
-      margin: 12px 0;
+      gap: 14px;
+      margin: 16px 0;
     }
 
     .color-dot {
@@ -965,8 +977,8 @@ import { SkillIconComponent, SkillIconName } from '../../../shared/ui/skill-icon
     .preview-header {
       display: flex;
       align-items: center;
-      gap: 16px;
-      padding: 20px;
+      gap: 18px;
+      padding: 20px 24px;
     }
 
     .avatar-container {
@@ -1056,8 +1068,8 @@ import { SkillIconComponent, SkillIconName } from '../../../shared/ui/skill-icon
     .stat-bar-row {
       display: flex;
       align-items: center;
-      gap: 8px;
-      margin-bottom: 6px;
+      gap: 10px;
+      margin-bottom: 10px;
     }
 
     .stat-label {
@@ -1119,21 +1131,21 @@ import { SkillIconComponent, SkillIconName } from '../../../shared/ui/skill-icon
     .nav-buttons {
       display: flex;
       justify-content: space-between;
-      margin-top: 24px;
-      padding-top: 16px;
+      margin-top: 32px;
+      padding-top: 20px;
       border-top: 1px solid rgba(255,255,255,0.1);
     }
 
     /* Race selection styles */
     .race-selection-section {
-      margin-top: 24px;
+      margin-top: 28px;
       padding-top: 24px;
       border-top: 1px solid rgba(255, 255, 255, 0.1);
     }
 
     .race-selection-section h3 {
       font-size: 18px;
-      margin: 0 0 4px 0;
+      margin: 0 0 8px 0;
     }
 
     .race-grid {
@@ -1302,8 +1314,8 @@ import { SkillIconComponent, SkillIconName } from '../../../shared/ui/skill-icon
     .skills-list {
       display: flex;
       flex-direction: column;
-      gap: 12px;
-      margin-bottom: 16px;
+      gap: 14px;
+      margin-bottom: 20px;
     }
 
     .skill-preview-card {
@@ -1313,8 +1325,8 @@ import { SkillIconComponent, SkillIconName } from '../../../shared/ui/skill-icon
     .skill-header {
       display: flex;
       align-items: flex-start;
-      gap: 12px;
-      margin-bottom: 8px;
+      gap: 14px;
+      margin-bottom: 10px;
     }
 
     .skill-icon {
@@ -1386,14 +1398,14 @@ import { SkillIconComponent, SkillIconName } from '../../../shared/ui/skill-icon
     .skills-preview-list {
       display: flex;
       flex-direction: column;
-      gap: 6px;
+      gap: 8px;
     }
 
     .skill-preview-item {
       display: flex;
       align-items: center;
-      gap: 8px;
-      padding: 8px;
+      gap: 10px;
+      padding: 10px 12px;
       background: rgba(255, 255, 255, 0.05);
       border-radius: 8px;
     }

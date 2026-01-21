@@ -673,9 +673,10 @@ interface RaceEntry {
       display: flex;
       align-items: center;
       justify-content: center;
-      margin-bottom: 24px;
+      margin-bottom: 28px;
       flex-wrap: wrap;
-      gap: 4px;
+      gap: 6px;
+      padding: 0 8px;
     }
 
     .step {
@@ -713,9 +714,10 @@ interface RaceEntry {
 
     .step-label {
       font-size: 10px;
-      margin-top: 4px;
+      margin-top: 6px;
       text-align: center;
-      max-width: 60px;
+      max-width: 64px;
+      line-height: 1.2;
     }
 
     .step-line {
@@ -730,18 +732,19 @@ interface RaceEntry {
     }
 
     .form-section h2 {
-      margin: 0 0 4px 0;
+      margin: 0 0 8px 0;
       font-size: 20px;
     }
 
     .section-desc {
       color: var(--ion-color-medium);
-      margin: 0 0 16px 0;
+      margin: 0 0 20px 0;
       font-size: 14px;
+      line-height: 1.5;
     }
 
     .stat-card, .rule-card {
-      margin: 8px 0;
+      margin: 12px 0;
     }
 
     .rule-card.invalid {
@@ -804,7 +807,7 @@ interface RaceEntry {
     .stat-header {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 10px;
     }
 
     .stat-header ion-icon {
@@ -817,8 +820,8 @@ interface RaceEntry {
 
     .stat-details, .stat-values {
       display: flex;
-      gap: 8px;
-      margin-top: 8px;
+      gap: 10px;
+      margin-top: 12px;
     }
 
     .stat-details ion-item, .stat-values ion-item {
@@ -922,21 +925,21 @@ interface RaceEntry {
     .nav-buttons {
       display: flex;
       justify-content: space-between;
-      margin-top: 24px;
-      padding-top: 16px;
+      margin-top: 32px;
+      padding-top: 20px;
       border-top: 1px solid rgba(255,255,255,0.1);
     }
 
     /* Cover image section */
     .cover-image-section {
-      margin: 16px 0;
+      margin: 20px 0;
     }
 
     .section-label {
       display: block;
       font-size: 14px;
       font-weight: 500;
-      margin-bottom: 8px;
+      margin-bottom: 12px;
       color: var(--ion-color-medium);
     }
 
@@ -1034,13 +1037,13 @@ interface RaceEntry {
     }
 
     .race-card {
-      margin: 12px 0;
+      margin: 14px 0;
     }
 
     .race-header {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 10px;
     }
 
     .race-name-input {
@@ -1196,8 +1199,8 @@ interface RaceEntry {
 
     /* Base stats section */
     .base-stats-section {
-      margin-top: 16px;
-      padding-top: 12px;
+      margin-top: 18px;
+      padding-top: 14px;
       border-top: 1px solid rgba(255, 255, 255, 0.1);
     }
 
@@ -1205,7 +1208,7 @@ interface RaceEntry {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 12px;
+      margin-bottom: 14px;
     }
 
     .base-stats-label {
@@ -1232,15 +1235,15 @@ interface RaceEntry {
     .base-stats-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-      gap: 8px;
+      gap: 10px;
     }
 
     .base-stat-item {
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 4px;
-      padding: 8px;
+      gap: 6px;
+      padding: 10px;
       background: rgba(255, 255, 255, 0.05);
       border-radius: 8px;
     }

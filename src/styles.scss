@@ -240,12 +240,15 @@ ion-item {
   --border-color: var(--qdt-border-subtle);
   --padding-start: 16px;
   --padding-end: 16px;
-  --inner-padding-end: 0;
+  --inner-padding-end: 8px;
+  --min-height: 48px;
   font-family: var(--qdt-font-mono);
+  margin-bottom: 12px;
 
   ion-label {
     font-size: 13px;
     letter-spacing: var(--qdt-tracking-wide);
+    margin: 8px 0;
 
     h2 {
       font-size: 14px;
@@ -258,6 +261,12 @@ ion-item {
       color: var(--qdt-text-muted);
     }
   }
+
+  /* Labels flotantes/stacked tienen mejor espaciado */
+  &.item-label-stacked ion-label,
+  &.item-label-floating ion-label {
+    margin-bottom: 6px;
+  }
 }
 
 /* Ion Input - QDT Style */
@@ -267,6 +276,8 @@ ion-input, ion-textarea {
   --border-radius: 0;
   --padding-start: 12px;
   --padding-end: 12px;
+  --padding-top: 12px;
+  --padding-bottom: 12px;
   --placeholder-color: var(--qdt-text-subtle);
   --placeholder-opacity: 1;
   font-family: var(--qdt-font-mono);
@@ -274,6 +285,7 @@ ion-input, ion-textarea {
   letter-spacing: var(--qdt-tracking-wide);
   color: var(--qdt-text-primary);
   border: 1px solid var(--qdt-border-default);
+  margin-bottom: 4px;
 
   &:focus-within {
     border-color: var(--qdt-border-focus);
@@ -933,16 +945,16 @@ app-qdt-effects {
 
 /* QDT Input Group */
 .qdt-input-group {
-  margin-bottom: 16px;
+  margin-bottom: 20px;
 
   label {
     display: block;
     font-family: var(--qdt-font-mono);
-    font-size: 10px;
+    font-size: 11px;
     letter-spacing: var(--qdt-tracking-widest);
     text-transform: uppercase;
     color: var(--qdt-text-secondary);
-    margin-bottom: 8px;
+    margin-bottom: 10px;
 
     .required {
       color: var(--qdt-accent-red);
@@ -952,10 +964,10 @@ app-qdt-effects {
 
   .hint {
     font-family: var(--qdt-font-mono);
-    font-size: 10px;
+    font-size: 11px;
     letter-spacing: var(--qdt-tracking-wide);
     color: var(--qdt-text-subtle);
-    margin-top: 4px;
+    margin-top: 6px;
   }
 
   input, textarea, select {
@@ -966,7 +978,7 @@ app-qdt-effects {
     font-family: var(--qdt-font-mono);
     font-size: 13px;
     letter-spacing: var(--qdt-tracking-wide);
-    padding: 12px 16px;
+    padding: 14px 16px;
     outline: none;
     transition: all 0.2s ease;
 
