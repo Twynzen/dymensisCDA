@@ -251,6 +251,40 @@ interface RaceEntry {
               <ion-chip (click)="loadPreset('dnd')">D&D Clásico</ion-chip>
               <ion-chip (click)="loadPreset('cyberpunk')">Cyberpunk</ion-chip>
             </div>
+
+            <!-- Sistema de Crecimiento -->
+            <div class="growth-system-section">
+              <ion-card class="growth-card">
+                <ion-card-content>
+                  <div class="growth-header">
+                    <ion-icon name="trending-up" color="success"></ion-icon>
+                    <h3>Sistema de Crecimiento</h3>
+                  </div>
+                  <p class="growth-desc">
+                    Cuando está activo, las mejoras de stats se acumulan en un pool de "crecimiento" separado.
+                    Esto permite ver claramente cuánto ha progresado un personaje desde su creación.
+                  </p>
+                  <ion-item class="toggle-item" lines="none">
+                    <ion-toggle [(ngModel)]="hasGrowthSystem" [enableOnOffLabels]="true">
+                      <div class="toggle-content">
+                        <ion-icon [name]="hasGrowthSystem ? 'analytics' : 'analytics-outline'"></ion-icon>
+                        <span>{{ hasGrowthSystem ? 'Crecimiento Activo' : 'Crecimiento Inactivo' }}</span>
+                      </div>
+                    </ion-toggle>
+                  </ion-item>
+                  @if (hasGrowthSystem) {
+                    <div class="growth-example">
+                      <p class="example-label">Ejemplo de visualización:</p>
+                      <div class="stat-breakdown">
+                        <span class="stat-name">Fuerza:</span>
+                        <span class="stat-total">15</span>
+                        <span class="stat-formula">= Base(10) + Crecimiento(+5)</span>
+                      </div>
+                    </div>
+                  }
+                </ion-card-content>
+              </ion-card>
+            </div>
           </div>
         }
 
@@ -609,6 +643,25 @@ interface RaceEntry {
                     </div>
                   </div>
                 }
+
+                <div class="review-section-block">
+                  <h4>Sistema de Crecimiento</h4>
+                  <div class="growth-status">
+                    @if (hasGrowthSystem) {
+                      <ion-chip color="success">
+                        <ion-icon name="trending-up"></ion-icon>
+                        <ion-label>Activo</ion-label>
+                      </ion-chip>
+                      <p class="growth-note">Las mejoras irán a un pool de crecimiento separado</p>
+                    } @else {
+                      <ion-chip color="medium">
+                        <ion-icon name="remove-circle-outline"></ion-icon>
+                        <ion-label>Inactivo</ion-label>
+                      </ion-chip>
+                      <p class="growth-note">Las mejoras se sumarán directamente a los stats base</p>
+                    }
+                  </div>
+                </div>
               </ion-card-content>
             </ion-card>
 
@@ -1294,6 +1347,92 @@ interface RaceEntry {
     .race-image-section app-image-upload {
       --min-height: 80px;
     }
+
+    /* Growth System Section */
+    .growth-system-section {
+      margin-top: 24px;
+    }
+
+    .growth-card {
+      margin: 0;
+      background: rgba(var(--ion-color-success-rgb), 0.08);
+      border: 1px solid rgba(var(--ion-color-success-rgb), 0.2);
+    }
+
+    .growth-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .growth-header ion-icon {
+      font-size: 24px;
+    }
+
+    .growth-header h3 {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .growth-desc {
+      font-size: 13px;
+      color: var(--ion-color-medium);
+      margin: 0 0 12px 0;
+      line-height: 1.5;
+    }
+
+    .growth-example {
+      margin-top: 12px;
+      padding: 12px;
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 8px;
+    }
+
+    .example-label {
+      font-size: 11px;
+      color: var(--ion-color-medium);
+      margin: 0 0 8px 0;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .stat-breakdown {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-family: monospace;
+    }
+
+    .stat-name {
+      font-weight: 600;
+      color: var(--ion-color-primary);
+    }
+
+    .stat-total {
+      font-size: 18px;
+      font-weight: bold;
+      color: var(--ion-text-color);
+    }
+
+    .stat-formula {
+      font-size: 12px;
+      color: var(--ion-color-success);
+    }
+
+    /* Growth status in review */
+    .growth-status {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .growth-note {
+      font-size: 12px;
+      color: var(--ion-color-medium);
+      margin: 0;
+    }
   `]
 })
 export class ManualUniverseFormComponent {
@@ -1346,6 +1485,7 @@ export class ManualUniverseFormComponent {
 
   selectedTheme = '';
   initialPoints = DEFAULT_INITIAL_POINTS;
+  hasGrowthSystem = false;
 
   stats: StatEntry[] = [
     { key: 'strength', name: 'Fuerza', abbreviation: 'STR', icon: 'barbell-outline', color: '#F44336', maxValue: 100 },
@@ -1747,7 +1887,8 @@ export class ManualUniverseFormComponent {
         ? this.awakening
         : { enabled: false, levels: [], thresholds: [] },
       raceSystem,
-      isPublic: this.universe.isPublic
+      isPublic: this.universe.isPublic,
+      hasGrowthSystem: this.hasGrowthSystem
     };
 
     // Log detallado para debug - mostrar toda la estructura del universo
@@ -1770,6 +1911,7 @@ export class ManualUniverseFormComponent {
     } else {
       console.log('👥 Sistema de Razas: Inactivo');
     }
+    console.log('📈 Sistema de Crecimiento:', universeData.hasGrowthSystem ? 'Activo' : 'Inactivo');
     console.log('🌐 Público:', universeData.isPublic);
     console.log('────────────────────────────────────────────────────────────────');
     console.log('📄 OBJETO COMPLETO (para copiar):');
