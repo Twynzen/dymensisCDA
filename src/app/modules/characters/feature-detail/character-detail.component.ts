@@ -151,19 +151,34 @@ import { SkillIconComponent, SkillIconName } from '../../../shared/ui/skill-icon
             <div class="stats-section" @fadeIn>
               <div class="total-stats-panel">
                 <span class="total-label">PODER TOTAL</span>
-                <span class="total-value">{{ characterStore.totalStats() }}</span>
+                <span class="total-value">{{ totalStatsWithGrowth() }}</span>
               </div>
+
+              @if (hasGrowthStats()) {
+                <div class="growth-info-panel">
+                  <ion-icon name="trending-up" color="success"></ion-icon>
+                  <span class="growth-info-text">Sistema de crecimiento activo</span>
+                </div>
+              }
 
               <div class="stats-list">
                 @for (stat of sortedStats(); track stat.key) {
-                  <app-stat-bar
-                    [statName]="getStatName(stat.key)"
-                    [statAbbreviation]="getStatAbbreviation(stat.key)"
-                    [statIcon]="getStatIcon(stat.key)"
-                    [statValue]="stat.value"
-                    [statMaxValue]="getStatMax(stat.key)"
-                    [statColor]="getStatColor(stat.key)"
-                  ></app-stat-bar>
+                  <div class="stat-row">
+                    <app-stat-bar
+                      [statName]="getStatName(stat.key)"
+                      [statAbbreviation]="getStatAbbreviation(stat.key)"
+                      [statIcon]="getStatIcon(stat.key)"
+                      [statValue]="stat.value"
+                      [statMaxValue]="getStatMax(stat.key)"
+                      [statColor]="getStatColor(stat.key)"
+                    ></app-stat-bar>
+                    @if (universeHasGrowthSystem() && stat.growthValue > 0) {
+                      <div class="stat-breakdown">
+                        <span class="breakdown-base">Base: {{ stat.baseValue }}</span>
+                        <span class="breakdown-growth">+{{ stat.growthValue }} crecimiento</span>
+                      </div>
+                    }
+                  </div>
                 }
               </div>
             </div>
@@ -671,7 +686,50 @@ import { SkillIconComponent, SkillIconName } from '../../../shared/ui/skill-icon
     .stats-list {
       display: flex;
       flex-direction: column;
-      gap: 4px;
+      gap: 8px;
+    }
+
+    .stat-row {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .stat-breakdown {
+      display: flex;
+      gap: 12px;
+      padding-left: 16px;
+      font-family: var(--qdt-font-mono);
+      font-size: 9px;
+    }
+
+    .breakdown-base {
+      color: var(--qdt-text-muted);
+    }
+
+    .breakdown-growth {
+      color: var(--qdt-accent-green);
+    }
+
+    .growth-info-panel {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      background: rgba(22, 163, 74, 0.1);
+      border: 1px solid rgba(22, 163, 74, 0.3);
+      margin-bottom: 16px;
+    }
+
+    .growth-info-panel ion-icon {
+      font-size: 16px;
+    }
+
+    .growth-info-text {
+      font-family: var(--qdt-font-mono);
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      color: var(--qdt-accent-green);
     }
 
     /* Radar Section */
@@ -1027,12 +1085,56 @@ export class CharacterDetailComponent implements OnInit {
     return universe?.awakeningSystem?.enabled === true;
   });
 
+  // Detecta si el universo tiene sistema de crecimiento
+  universeHasGrowthSystem = computed(() => {
+    const character = this.character();
+    if (!character) return false;
+    const universe = this.universeStore.allUniverses().find(u => u.id === character.universeId);
+    return universe?.hasGrowthSystem === true;
+  });
+
+  // Detecta si el personaje tiene puntos de crecimiento
+  hasGrowthStats = computed(() => {
+    const character = this.character();
+    if (!character?.growthStats) return false;
+    return Object.values(character.growthStats).some(v => v > 0);
+  });
+
   sortedStats = computed(() => {
     const character = this.character();
     if (!character) return [];
+
+    // Si tiene growth system, mostrar totales (base + growth)
+    if (this.universeHasGrowthSystem()) {
+      return Object.entries(character.stats)
+        .map(([key, baseValue]) => {
+          const growthValue = character.growthStats?.[key] ?? 0;
+          return {
+            key,
+            value: baseValue + growthValue,
+            baseValue,
+            growthValue
+          };
+        })
+        .sort((a, b) => b.value - a.value);
+    }
+
     return Object.entries(character.stats)
-      .map(([key, value]) => ({ key, value }))
+      .map(([key, value]) => ({ key, value, baseValue: value, growthValue: 0 }))
       .sort((a, b) => b.value - a.value);
+  });
+
+  // Total de stats incluyendo crecimiento
+  totalStatsWithGrowth = computed(() => {
+    const character = this.character();
+    if (!character) return 0;
+
+    const baseTotal = Object.values(character.stats).reduce((sum, val) => sum + val, 0);
+    const growthTotal = character.growthStats
+      ? Object.values(character.growthStats).reduce((sum, val) => sum + val, 0)
+      : 0;
+
+    return baseTotal + growthTotal;
   });
 
   statLabels = computed(() => {

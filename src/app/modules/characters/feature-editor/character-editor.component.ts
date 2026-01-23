@@ -141,6 +141,17 @@ interface StatJustification {
             }
           </ion-list-header>
 
+          <!-- Growth System Notice -->
+          @if (isEditing() && universeHasGrowthSystem()) {
+            <div class="growth-notice">
+              <ion-icon name="trending-up" color="success"></ion-icon>
+              <div class="growth-notice-content">
+                <strong>Sistema de Crecimiento Activo</strong>
+                <p>Los cambios se agregan como puntos de crecimiento, sin modificar los stats base.</p>
+              </div>
+            </div>
+          }
+
           <div class="stats-editor">
             @for (stat of editableStats(); track stat.key) {
               <div class="stat-editor-item" [class.stat-changed]="statHasChanged(stat.key)">
@@ -162,6 +173,11 @@ interface StatJustification {
                     <span class="stat-value-display" [style.color]="stat.color">
                       {{ getStatValue(stat.key) }}
                     </span>
+                    @if (isEditing() && universeHasGrowthSystem()) {
+                      <span class="stat-breakdown-mini">
+                        ({{ getBaseStatValue(stat.key) }}+{{ getGrowthStatValue(stat.key) }})
+                      </span>
+                    }
                     <ion-button
                       fill="clear"
                       size="small"
@@ -498,6 +514,41 @@ interface StatJustification {
       margin-bottom: 12px;
       opacity: 0.8;
     }
+
+    /* Growth System Styles */
+    .growth-notice {
+      display: flex;
+      gap: 12px;
+      padding: 12px 16px;
+      margin: 8px 16px 16px;
+      background: rgba(var(--ion-color-success-rgb), 0.1);
+      border: 1px solid rgba(var(--ion-color-success-rgb), 0.3);
+      border-radius: 8px;
+    }
+
+    .growth-notice ion-icon {
+      font-size: 24px;
+      flex-shrink: 0;
+    }
+
+    .growth-notice-content strong {
+      display: block;
+      font-size: 14px;
+      color: var(--ion-color-success);
+    }
+
+    .growth-notice-content p {
+      margin: 4px 0 0;
+      font-size: 12px;
+      opacity: 0.8;
+    }
+
+    .stat-breakdown-mini {
+      font-size: 11px;
+      color: var(--ion-color-success);
+      margin-left: 4px;
+      opacity: 0.8;
+    }
   `]
 })
 export class CharacterEditorComponent implements OnInit {
@@ -521,6 +572,9 @@ export class CharacterEditorComponent implements OnInit {
   backgroundColor = '#1a1a2e';
   stats = signal<Record<string, number>>({});
   originalStats = signal<Record<string, number>>({});
+  // Growth stats: puntos de crecimiento separados (solo se usa con hasGrowthSystem)
+  growthStats = signal<Record<string, number>>({});
+  originalGrowthStats = signal<Record<string, number>>({});
   justifications = signal<Record<string, string>>({});
   title = '';
 
@@ -560,6 +614,15 @@ export class CharacterEditorComponent implements OnInit {
     return universe?.awakeningSystem?.enabled === true;
   });
 
+  // Detecta si el universo tiene sistema de crecimiento habilitado
+  universeHasGrowthSystem = computed(() => {
+    const universeId = this.isEditing()
+      ? this.characterStore.selectedCharacter()?.universeId
+      : this.selectedUniverseId;
+    const universe = this.universeStore.allUniverses().find(u => u.id === universeId);
+    return universe?.hasGrowthSystem === true;
+  });
+
   currentAwakening = computed(() => {
     return this.characterStore.selectedCharacter()?.progression?.awakening ?? 'E';
   });
@@ -569,6 +632,18 @@ export class CharacterEditorComponent implements OnInit {
   });
 
   totalStatChange = computed(() => {
+    // Si tiene growth system y estamos editando, calcular cambio en growthStats
+    if (this.isEditing() && this.universeHasGrowthSystem()) {
+      const current = this.growthStats();
+      const original = this.originalGrowthStats();
+      let change = 0;
+      const allKeys = new Set([...Object.keys(current), ...Object.keys(original)]);
+      for (const key of allKeys) {
+        change += (current[key] ?? 0) - (original[key] ?? 0);
+      }
+      return change;
+    }
+
     const current = this.stats();
     const original = this.originalStats();
     let change = 0;
@@ -591,6 +666,18 @@ export class CharacterEditorComponent implements OnInit {
   });
 
   changedStatsCount = computed(() => {
+    // Si tiene growth system y estamos editando, contar cambios en growthStats
+    if (this.isEditing() && this.universeHasGrowthSystem()) {
+      const current = this.growthStats();
+      const original = this.originalGrowthStats();
+      let count = 0;
+      const allKeys = new Set([...Object.keys(current), ...Object.keys(original)]);
+      for (const key of allKeys) {
+        if ((current[key] ?? 0) !== (original[key] ?? 0)) count++;
+      }
+      return count;
+    }
+
     const current = this.stats();
     const original = this.originalStats();
     let count = 0;
@@ -640,6 +727,9 @@ export class CharacterEditorComponent implements OnInit {
       this.backgroundColor = character.avatar?.backgroundColor ?? '#1a1a2e';
       this.stats.set({ ...character.stats });
       this.originalStats.set({ ...character.stats });
+      // Cargar growthStats si existen
+      this.growthStats.set({ ...(character.growthStats ?? {}) });
+      this.originalGrowthStats.set({ ...(character.growthStats ?? {}) });
       this.title = character.progression?.title ?? '';
     }
   }
@@ -662,7 +752,23 @@ export class CharacterEditorComponent implements OnInit {
   }
 
   getStatValue(key: string): number {
+    const baseValue = this.stats()[key] ?? 0;
+    // Si tiene growth system y estamos editando, mostrar base + growth
+    if (this.isEditing() && this.universeHasGrowthSystem()) {
+      const growthValue = this.growthStats()[key] ?? 0;
+      return baseValue + growthValue;
+    }
+    return baseValue;
+  }
+
+  // Obtiene solo el valor base del stat (sin crecimiento)
+  getBaseStatValue(key: string): number {
     return this.stats()[key] ?? 0;
+  }
+
+  // Obtiene el valor de crecimiento de un stat
+  getGrowthStatValue(key: string): number {
+    return this.growthStats()[key] ?? 0;
   }
 
   getJustification(key: string): string {
@@ -674,28 +780,56 @@ export class CharacterEditorComponent implements OnInit {
   }
 
   statHasChanged(key: string): boolean {
+    // Si tiene growth system y estamos editando, comparar growthStats
+    if (this.isEditing() && this.universeHasGrowthSystem()) {
+      return (this.growthStats()[key] ?? 0) !== (this.originalGrowthStats()[key] ?? 0);
+    }
     return this.stats()[key] !== this.originalStats()[key];
   }
 
   getStatChange(key: string): number {
+    // Si tiene growth system y estamos editando, calcular cambio en growthStats
+    if (this.isEditing() && this.universeHasGrowthSystem()) {
+      return (this.growthStats()[key] ?? 0) - (this.originalGrowthStats()[key] ?? 0);
+    }
     return (this.stats()[key] ?? 0) - (this.originalStats()[key] ?? 0);
   }
 
   incrementStat(key: string): void {
     const stat = this.editableStats().find(s => s.key === key);
     if (!stat) return;
-    const current = this.stats()[key] ?? 0;
-    if (current < stat.maxValue) {
-      this.stats.update(s => ({ ...s, [key]: current + 1 }));
+
+    // Si tiene growth system y estamos editando, modificar growthStats
+    if (this.isEditing() && this.universeHasGrowthSystem()) {
+      const totalValue = this.getStatValue(key);
+      if (totalValue < stat.maxValue) {
+        const currentGrowth = this.growthStats()[key] ?? 0;
+        this.growthStats.update(g => ({ ...g, [key]: currentGrowth + 1 }));
+      }
+    } else {
+      const current = this.stats()[key] ?? 0;
+      if (current < stat.maxValue) {
+        this.stats.update(s => ({ ...s, [key]: current + 1 }));
+      }
     }
   }
 
   decrementStat(key: string): void {
     const stat = this.editableStats().find(s => s.key === key);
     if (!stat) return;
-    const current = this.stats()[key] ?? 0;
-    if (current > stat.minValue) {
-      this.stats.update(s => ({ ...s, [key]: current - 1 }));
+
+    // Si tiene growth system y estamos editando, modificar growthStats
+    if (this.isEditing() && this.universeHasGrowthSystem()) {
+      const currentGrowth = this.growthStats()[key] ?? 0;
+      // Solo permitir decrementar si hay crecimiento que quitar
+      if (currentGrowth > 0) {
+        this.growthStats.update(g => ({ ...g, [key]: currentGrowth - 1 }));
+      }
+    } else {
+      const current = this.stats()[key] ?? 0;
+      if (current > stat.minValue) {
+        this.stats.update(s => ({ ...s, [key]: current - 1 }));
+      }
     }
   }
 
@@ -728,6 +862,7 @@ export class CharacterEditorComponent implements OnInit {
       if (this.isEditing()) {
         // Collect stat changes with justifications for history
         const justifs = this.justifications();
+        const hasGrowthSystem = this.universeHasGrowthSystem();
         const statChanges = this.editableStats()
           .filter(stat => this.statHasChanged(stat.key))
           .map(stat => ({
@@ -736,28 +871,42 @@ export class CharacterEditorComponent implements OnInit {
             reason: justifs[stat.key]
           }));
 
-        await this.characterStore.updateCharacter(this.characterId()!, {
+        // Preparar actualizaciones base
+        const updates: any = {
           name: this.characterName.trim(),
           description: this.characterDescription.trim() || undefined,
           avatar: {
             photoUrl: this.avatarImage() || null,
             backgroundColor: this.backgroundColor
           },
-          stats: this.stats(),
           progression: {
             level: this.characterStore.selectedCharacter()?.progression?.level ?? 1,
             experience: this.characterStore.selectedCharacter()?.progression?.experience ?? 0,
             awakening: this.characterStore.selectedCharacter()?.progression?.awakening ?? 'E',
             title: this.title || undefined
           }
-        });
+        };
+
+        // Si tiene growth system, actualizar growthStats; si no, actualizar stats
+        if (hasGrowthSystem) {
+          updates.growthStats = this.growthStats();
+          // Los stats base NO cambian con growth system
+        } else {
+          updates.stats = this.stats();
+        }
+
+        await this.characterStore.updateCharacter(this.characterId()!, updates);
 
         // If there were stat changes, add to history
         if (statChanges.length > 0) {
           const userId = this.characterStore.selectedCharacter()?.ownerId;
           if (userId && this.characterId()) {
+            const actionDescription = hasGrowthSystem
+              ? 'Puntos de crecimiento agregados'
+              : 'Edición manual de estadísticas';
+
             await this.firebaseService.addHistoryEntry(userId, this.characterId()!, {
-              action: 'Edición manual de estadísticas',
+              action: actionDescription,
               timestamp: new Date(),
               aiAnalysis: {
                 suggestedChanges: statChanges,

@@ -29,6 +29,9 @@ export interface Character {
   baseStats?: Record<string, number>; // Stats before race modifiers
   bonusStats?: Record<string, number>; // Points distributed manually by user
   derivedStats?: Record<string, number>;
+  // Sistema de crecimiento: puntos ganados por evolución (separados de stats base)
+  // Solo se usa cuando el universo tiene hasGrowthSystem: true
+  growthStats?: Record<string, number>;
   progression: CharacterProgression;
   sharing: CharacterSharing;
   // Optional character details
@@ -96,6 +99,7 @@ export function createDefaultCharacter(
     baseStats?: Record<string, number>;
     bonusStats?: Record<string, number>;
     derivedStats?: Record<string, number>;
+    growthStats?: Record<string, number>;
     description?: string;
     backstory?: string;
     personalityTraits?: string[];
@@ -118,6 +122,7 @@ export function createDefaultCharacter(
     baseStats: options?.baseStats,
     bonusStats: options?.bonusStats,
     derivedStats: options?.derivedStats,
+    growthStats: options?.growthStats,
     description: options?.description,
     backstory: options?.backstory,
     personalityTraits: options?.personalityTraits,
@@ -148,4 +153,55 @@ export function calculateAwakening(
   }
 
   return levels[0];
+}
+
+/**
+ * Calcula el valor total de un stat específico (base + crecimiento)
+ * @param character El personaje
+ * @param statKey La clave del stat
+ * @returns El valor total del stat
+ */
+export function calculateTotalStat(
+  character: Character,
+  statKey: string
+): number {
+  const baseValue = character.stats[statKey] ?? 0;
+  const growthValue = character.growthStats?.[statKey] ?? 0;
+  return baseValue + growthValue;
+}
+
+/**
+ * Calcula todos los stats totales del personaje (base + crecimiento)
+ * @param character El personaje
+ * @returns Record con el valor total de cada stat
+ */
+export function calculateAllTotalStats(
+  character: Character
+): Record<string, number> {
+  const result: Record<string, number> = {};
+  const allStatKeys = new Set([
+    ...Object.keys(character.stats),
+    ...Object.keys(character.growthStats ?? {})
+  ]);
+
+  allStatKeys.forEach(key => {
+    result[key] = calculateTotalStat(character, key);
+  });
+
+  return result;
+}
+
+/**
+ * Obtiene el desglose de un stat (base y crecimiento separados)
+ * @param character El personaje
+ * @param statKey La clave del stat
+ * @returns Objeto con base, growth y total
+ */
+export function getStatBreakdown(
+  character: Character,
+  statKey: string
+): { base: number; growth: number; total: number } {
+  const base = character.stats[statKey] ?? 0;
+  const growth = character.growthStats?.[statKey] ?? 0;
+  return { base, growth, total: base + growth };
 }

@@ -56,6 +56,9 @@ export interface Universe {
   progressionRules: ProgressionRule[];
   awakeningSystem?: AwakeningSystem;
   raceSystem?: RaceSystem;
+  // Sistema de crecimiento: si está habilitado, las mejoras de stats van a un pool separado
+  // en lugar de sumarse directamente a los stats base
+  hasGrowthSystem?: boolean;
 }
 
 export const DEFAULT_STAT_DEFINITIONS: Record<string, StatDefinition> = {
