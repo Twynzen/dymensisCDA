@@ -968,11 +968,13 @@ export class UniverseEditorComponent implements OnInit {
         // Desactivando crecimiento que estaba activo
         const alert = await this.alertController.create({
           header: '⚠️ Advertencia',
-          message: `<strong>Desactivar el sistema de crecimiento</strong> puede afectar a los personajes existentes:<br><br>
-          • Los personajes que tengan puntos de crecimiento seguirán conservándolos en la base de datos<br>
-          • Pero ya no se mostrarán como "crecimiento" separado<br>
-          • Los puntos de crecimiento NO se sumarán a los stats base automáticamente<br><br>
-          <em>Recomendación: Si tienes personajes con crecimiento, considera migrar sus datos manualmente.</em>`,
+          message: `Desactivar el sistema de crecimiento puede afectar a los personajes existentes:
+
+• Los personajes conservarán sus puntos de crecimiento en la base de datos
+• Pero ya no se mostrarán como "crecimiento" separado
+• Los puntos NO se sumarán a los stats base automáticamente
+
+Recomendación: Si tienes personajes con crecimiento, considera migrar sus datos manualmente.`,
           buttons: [
             {
               text: 'Cancelar',
@@ -993,12 +995,14 @@ export class UniverseEditorComponent implements OnInit {
         // Activando crecimiento por primera vez
         const alert = await this.alertController.create({
           header: 'Sistema de Crecimiento',
-          message: `<strong>Al activar el sistema de crecimiento:</strong><br><br>
-          • Los personajes existentes empezarán con 0 puntos de crecimiento<br>
-          • Las futuras mejoras de stats irán al pool de crecimiento<br>
-          • Los stats base de los personajes NO cambiarán<br><br>
-          El formato de visualización será:<br>
-          <em>Fuerza: 15 = Base(10) + Crecimiento(+5)</em>`,
+          message: `Al activar el sistema de crecimiento:
+
+• Los personajes existentes empezarán con 0 puntos de crecimiento
+• Las futuras mejoras de stats irán al pool de crecimiento
+• Los stats base de los personajes NO cambiarán
+
+Ejemplo de visualización:
+Fuerza: 15 = Base(10) + Crecimiento(+5)`,
           buttons: ['Entendido']
         });
         await alert.present();
