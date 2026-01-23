@@ -41,16 +41,37 @@ export const CharacterStore = signalStore(
   withComputed((store) => ({
     characterCount: computed(() => store.characters().length),
     hasSelectedCharacter: computed(() => store.selectedCharacter() !== null),
-    totalStats: computed(() => {
+    // Total de stats base (sin crecimiento)
+    baseStats: computed(() => {
       const character = store.selectedCharacter();
       if (!character) return 0;
       return Object.values(character.stats).reduce((sum, val) => sum + val, 0);
     }),
+    // Total de puntos de crecimiento
+    growthStats: computed(() => {
+      const character = store.selectedCharacter();
+      if (!character?.growthStats) return 0;
+      return Object.values(character.growthStats).reduce((sum, val) => sum + val, 0);
+    }),
+    // Total combinado (base + crecimiento)
+    totalStats: computed(() => {
+      const character = store.selectedCharacter();
+      if (!character) return 0;
+      const baseTotal = Object.values(character.stats).reduce((sum, val) => sum + val, 0);
+      const growthTotal = character.growthStats
+        ? Object.values(character.growthStats).reduce((sum, val) => sum + val, 0)
+        : 0;
+      return baseTotal + growthTotal;
+    }),
     sortedStats: computed(() => {
       const character = store.selectedCharacter();
       if (!character) return [];
+      // Incluye growthStats en el valor mostrado
       return Object.entries(character.stats)
-        .map(([key, value]) => ({ key, value }))
+        .map(([key, baseValue]) => {
+          const growthValue = character.growthStats?.[key] ?? 0;
+          return { key, value: baseValue + growthValue };
+        })
         .sort((a, b) => b.value - a.value);
     })
   })),
@@ -417,8 +438,16 @@ export const CharacterStore = signalStore(
         const character = store.selectedCharacter();
         if (!character) return;
 
+        // Calcular stats totales (base + crecimiento) para el awakening
+        const totalStatsForAwakening: Record<string, number> = {};
+        Object.keys(character.stats).forEach(key => {
+          const baseValue = character.stats[key] ?? 0;
+          const growthValue = character.growthStats?.[key] ?? 0;
+          totalStatsForAwakening[key] = baseValue + growthValue;
+        });
+
         const newAwakening = calculateAwakening(
-          character.stats,
+          totalStatsForAwakening,
           thresholds,
           levels
         );

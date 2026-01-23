@@ -1832,6 +1832,8 @@ export class ManualCharacterFormComponent implements OnInit {
       baseStats, // Base stats from race
       bonusStats: { ...this.character.bonusStats }, // Points distributed by user
       derivedStats: Object.keys(derivedStats).length > 0 ? derivedStats : undefined,
+      // Inicializar growthStats vacío (se usa si el universo tiene hasGrowthSystem)
+      growthStats: {},
       description: this.character.description || undefined,
       backstory: this.character.backstory || undefined,
       personalityTraits: this.character.personalityTraits.length > 0 ? [...this.character.personalityTraits] : undefined,

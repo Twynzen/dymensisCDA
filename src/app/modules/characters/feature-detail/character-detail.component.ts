@@ -186,7 +186,7 @@ import { SkillIconComponent, SkillIconName } from '../../../shared/ui/skill-icon
           @case ('radar') {
             <div class="radar-section" @fadeIn>
               <app-stats-radar
-                [stats]="character()!.stats"
+                [stats]="radarStats()"
                 [labels]="statLabels()"
                 [maxValue]="200"
                 [chartSize]="300"
@@ -1135,6 +1135,21 @@ export class CharacterDetailComponent implements OnInit {
       : 0;
 
     return baseTotal + growthTotal;
+  });
+
+  // Stats totales para el radar chart (base + growth)
+  radarStats = computed(() => {
+    const character = this.character();
+    if (!character) return {};
+
+    const result: Record<string, number> = {};
+    Object.keys(character.stats).forEach(key => {
+      const baseValue = character.stats[key] ?? 0;
+      const growthValue = character.growthStats?.[key] ?? 0;
+      result[key] = baseValue + growthValue;
+    });
+
+    return result;
   });
 
   statLabels = computed(() => {
