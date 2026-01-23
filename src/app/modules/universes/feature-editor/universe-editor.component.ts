@@ -131,6 +131,24 @@ import {
                 </ion-item>
               </div>
 
+              <!-- Growth System Toggle -->
+              <div class="form-group growth-system-group">
+                <ion-item>
+                  <ion-icon name="trending-up" slot="start" [color]="hasGrowthSystem ? 'success' : 'medium'"></ion-icon>
+                  <ion-toggle [(ngModel)]="hasGrowthSystem" (ionChange)="onGrowthSystemChange($event)">
+                    <ion-label>
+                      <h2>Sistema de Crecimiento</h2>
+                      <p>Las mejoras van a un pool separado de los stats base</p>
+                    </ion-label>
+                  </ion-toggle>
+                </ion-item>
+                @if (hasGrowthSystem) {
+                  <div class="growth-example">
+                    <p class="example-text">Ejemplo: Fuerza: 15 = Base(10) + Crecimiento(+5)</p>
+                  </div>
+                }
+              </div>
+
               <ion-list-header>
                 <ion-label>Estadísticas ({{ statsArray().length }})</ion-label>
                 <ion-button size="small" (click)="addStat()">
@@ -478,6 +496,26 @@ import {
       opacity: 0.8;
       text-align: center;
     }
+
+    .growth-system-group {
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .growth-example {
+      padding: 8px 16px;
+      margin-top: 8px;
+      background: rgba(var(--ion-color-success-rgb), 0.1);
+      border-radius: 8px;
+    }
+
+    .example-text {
+      font-size: 12px;
+      color: var(--ion-color-success);
+      margin: 0;
+      font-family: monospace;
+    }
   `]
 })
 export class UniverseEditorComponent implements OnInit {
@@ -506,6 +544,8 @@ export class UniverseEditorComponent implements OnInit {
   awakeningThresholds = signal<number[]>([]);
   races = signal<Race[]>([]);
   initialPoints = 60; // Points budget for races
+  hasGrowthSystem = false;
+  originalHasGrowthSystem = false; // Para detectar cambios
 
   universe = computed(() => this.universeStore.selectedUniverse());
 
@@ -543,6 +583,8 @@ export class UniverseEditorComponent implements OnInit {
       this.awakeningThresholds.set(universe.awakeningSystem?.thresholds || []);
       this.races.set(universe.raceSystem?.races || []);
       this.initialPoints = universe.initialPoints || 60;
+      this.hasGrowthSystem = universe.hasGrowthSystem === true;
+      this.originalHasGrowthSystem = this.hasGrowthSystem;
     }
   }
 
@@ -915,6 +957,55 @@ export class UniverseEditorComponent implements OnInit {
     this.races.update(races => races.filter((_, i) => i !== index));
   }
 
+  // Growth System change handler
+  async onGrowthSystemChange(event: any): Promise<void> {
+    const newValue = event.detail.checked;
+    const wasEnabled = this.originalHasGrowthSystem;
+
+    // Solo mostrar advertencia si estamos cambiando desde el valor original
+    if (newValue !== wasEnabled) {
+      if (wasEnabled && !newValue) {
+        // Desactivando crecimiento que estaba activo
+        const alert = await this.alertController.create({
+          header: '⚠️ Advertencia',
+          message: `<strong>Desactivar el sistema de crecimiento</strong> puede afectar a los personajes existentes:<br><br>
+          • Los personajes que tengan puntos de crecimiento seguirán conservándolos en la base de datos<br>
+          • Pero ya no se mostrarán como "crecimiento" separado<br>
+          • Los puntos de crecimiento NO se sumarán a los stats base automáticamente<br><br>
+          <em>Recomendación: Si tienes personajes con crecimiento, considera migrar sus datos manualmente.</em>`,
+          buttons: [
+            {
+              text: 'Cancelar',
+              role: 'cancel',
+              handler: () => {
+                // Revertir el toggle
+                this.hasGrowthSystem = true;
+              }
+            },
+            {
+              text: 'Entiendo, desactivar',
+              role: 'destructive'
+            }
+          ]
+        });
+        await alert.present();
+      } else if (!wasEnabled && newValue) {
+        // Activando crecimiento por primera vez
+        const alert = await this.alertController.create({
+          header: 'Sistema de Crecimiento',
+          message: `<strong>Al activar el sistema de crecimiento:</strong><br><br>
+          • Los personajes existentes empezarán con 0 puntos de crecimiento<br>
+          • Las futuras mejoras de stats irán al pool de crecimiento<br>
+          • Los stats base de los personajes NO cambiarán<br><br>
+          El formato de visualización será:<br>
+          <em>Fuerza: 15 = Base(10) + Crecimiento(+5)</em>`,
+          buttons: ['Entendido']
+        });
+        await alert.present();
+      }
+    }
+  }
+
   // Delete Universe
   async confirmDeleteUniverse(): Promise<void> {
     const alert = await this.alertController.create({
@@ -958,6 +1049,7 @@ export class UniverseEditorComponent implements OnInit {
         statDefinitions: this.statDefinitions(),
         progressionRules: this.progressionRules(),
         initialPoints: this.initialPoints,
+        hasGrowthSystem: this.hasGrowthSystem,
         awakeningSystem: {
           enabled: this.awakeningEnabledValue,
           levels: this.awakeningLevels(),
